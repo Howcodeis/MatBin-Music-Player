@@ -1,0 +1,72 @@
+<script setup>
+/*
+ * 可点击的歌手名。
+ *
+ * 兼容两种字段：搜索结果用 artists，歌单详情用 ar；
+ * currentMusicInfo.artists 初始值是空字符串，所以这里统一用 Array.isArray 兜底，
+ * 不能直接 v-for 一个字符串（会逐字符渲染）。
+ *
+ * 点击用 @click.stop：列表行本身绑了 row-click 播放，不阻止冒泡会「点了歌手却开始放歌」。
+ */
+import { computed, defineOptions } from 'vue'
+import { useGoArtist } from '@/composables/useGoArtist'
+
+defineOptions({
+  name: 'ArtistLinks'
+})
+
+const props = defineProps({
+  artists: {
+    type: [Array, String],
+    default: () => []
+  },
+  separator: {
+    type: String,
+    default: ' / '
+  },
+  emptyText: {
+    type: String,
+    default: '暂无歌手'
+  }
+})
+
+const list = computed(() => (Array.isArray(props.artists) ? props.artists : []))
+const { goArtist } = useGoArtist()
+</script>
+
+<template>
+  <span class="artist-links">
+    <template v-if="list.length">
+      <template v-for="(artist, index) in list" :key="artist.id ?? index">
+        <span v-if="index" class="artist-sep">{{ separator }}</span>
+        <span class="artist-link" :title="`查看 ${artist.name} 的热门歌曲`" @click.stop="goArtist(artist)">{{
+          artist.name }}</span>
+      </template>
+    </template>
+    <span v-else class="artist-empty">{{ emptyText }}</span>
+  </span>
+</template>
+
+<style scoped>
+.artist-links {
+  display: inline;
+}
+
+.artist-link {
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.artist-link:hover {
+  color: #99ccff;
+  text-decoration: underline;
+}
+
+.artist-sep {
+  opacity: 0.65;
+}
+
+.artist-empty {
+  opacity: 0.65;
+}
+</style>

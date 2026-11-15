@@ -6,7 +6,8 @@
 import axios from "axios";
 import nProgress from 'nprogress'
 
-const http = axios.create({
+
+const HTTP_CONFIG = {
   baseURL: '/api/',
   timeout: 10000,
   withCredentials: true,
@@ -14,31 +15,42 @@ const http = axios.create({
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest'
   }
-})
+}
+
+const http = axios.create(HTTP_CONFIG)
+
+const handleRequestStart = (config) => {
+  nProgress.start()
+  return config
+}
+
+const handleRequestError = (error) => {
+  nProgress.done()
+  return Promise.reject(error)
+}
+
+const handleResponseSuccess = (response) => {
+  nProgress.done()
+  if (response.status === 200) {
+    return response.data
+  }
+  return Promise.reject(response)
+}
+
+const handleResponseError = (error) => {
+  nProgress.done()
+  return Promise.reject(error)
+}
 
 // 请求拦截
 http.interceptors.request.use(
-  config => {
-    nProgress.start()
-    return config
-  },
-  error => {
-    nProgress.done()
-    return error
-  }
+  handleRequestStart,
+  handleRequestError
 )
 // 响应拦截
 http.interceptors.response.use(
-  response => {
-    if (response.status == 200) {
-      nProgress.done()
-      return response.data
-    }
-  },
-  error => {
-    nProgress.done()
-    return error
-  }
+  handleResponseSuccess,
+  handleResponseError
 )
 
 export default http

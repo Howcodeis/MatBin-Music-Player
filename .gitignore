@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 本地源码备份（修复前快照）
+backup/
+_backup/

@@ -4,10 +4,17 @@
  * @Description: 路由配置
  */
 
-import { musicStatus } from '../store'
-import { storeToRefs } from 'pinia'
-import { nextTick } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
+// 统一管理懒加载的组件路径，方便维护
+const Home = () => import('../pages/home/home.vue')
+const Music = () => import('../pages/music/music.vue')
+const PlayList = () => import('../pages/music/playList.vue')
+const Favorite = () => import('../pages/music/favorite.vue')
+const FoundMusic = () => import('../pages/music/foundMusic.vue')
+const HotPlayList = () => import('../pages/music/hotPlayList.vue')
+const ArtistSongs = () => import('../pages/music/artistSongs.vue')
+const PlaylistDetail = () => import('../pages/music/playlistDetail.vue')
 
 const routes = [
   {
@@ -16,7 +23,7 @@ const routes = [
     meta: {
       menu: '主页'
     },
-    component: () => import('../components/home/home.vue')
+    component: Home,
   },
   {
     path: '/music',
@@ -25,25 +32,65 @@ const routes = [
     meta: {
       menu: '音乐'
     },
-    component: () => import('../components/music/music.vue'),
+    component: Music,
     children: [
       {
         path: 'playList',
         name: 'playList',
         meta: {
-          menu: '列表'
+          menu: '搜索列表'
         },
-        component: () => import('../views/playList/playList.vue')
+        component: PlayList,
+      },
+      {
+        path: 'favorite',
+        name: 'favorite',
+        meta: {
+          menu: '我的喜欢'
+        },
+        component: Favorite,
       },
       {
         path: 'foundMusic',
         name: 'foundMusic',
         meta: {
-          menu: '发现更多音乐'
+          menu: '发现音乐'
         },
-        component: () => import('../views/foundMusic/foundMusic.vue')
+        component: FoundMusic,
+      },
+      {
+        path: 'hotPlayList',
+        name: 'hotPlayList',
+        meta: {
+          menu: '热门歌单'
+        },
+        component: HotPlayList,
+      },
+      {
+        // 歌手热门：由歌曲列表/播放栏里的歌手名点击进入
+        path: 'artist/:id',
+        name: 'artistSongs',
+        meta: {
+          menu: '歌手热门'
+        },
+        component: ArtistSongs,
+      },
+      {
+        // 歌单详情：由「热门歌单」卡片点击进入
+        path: 'playlist/:id',
+        name: 'playlistDetail',
+        meta: {
+          menu: '歌单详情'
+        },
+        component: PlaylistDetail,
       }
     ]
+  },
+  {
+    // 兜底：未知路径回到首页，避免白屏
+    path: '/:pathMatch(.*)*',
+    name: 'notFound',
+    redirect: { name: 'home' }
   }
 ]
 
@@ -51,22 +98,5 @@ const router = createRouter({
   history: createWebHistory(),
   routes
 })
-// 防止列表渲染数据过多导致性能问题
-router.beforeEach((to, from) => {
-  if (to.name == "playList") {
-    // 列表数据大于60条，那么重新进入列表就会重新搜索并重置偏移量
-    if (musicStatus().playList.length > 60) {
-      nextTick(() => {
-        const { keywords } = storeToRefs(musicStatus())
-        musicStatus().setMusicList(keywords.value)
-      })
-    }
-  }
-  return true
-})
 
-
-router.afterEach((to, from) => {
-  return true
-})
 export default router

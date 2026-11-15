@@ -7,14 +7,23 @@
 
 import http from "../utils/axiosInterceptors";
 
+/*
+ * 统一用 params 传参：关键词里出现 & # 空格 等字符时，
+ * 手动拼 URL 会被截断或改变语义，axios 会负责 encodeURIComponent。
+ */
+
 /**
    * 搜索歌曲
-   * @param {string} keyword 
+   * @param {string} keywords 
+   * @param {number} limit
+   * @param {number} offset
    * @returns music-list
    */
-export const reqMusicList = async (keywords, limit, offset) => {
-  const url = `/search?keywords=${keywords}&limit=${limit}&offset=${offset}`;
-  return await http.get(url)
+export const reqMusicList = (keywords, limit, offset) => {
+  // 用 /cloudsearch 而不是 /search：
+  // /search 的 album 只返回 picId、没有 picUrl，列表拿不到封面；
+  // /cloudsearch 返回 al.picUrl，字段也更全（ar/al/dt），分页字段 songCount 一致。
+  return http.get('/cloudsearch', { params: { keywords, limit, offset } })
 }
 
 /**
@@ -22,9 +31,8 @@ export const reqMusicList = async (keywords, limit, offset) => {
  * @param {number} id 
  * @returns music-url
  */
-export const reqSongUrl = async id => {
-  const url = `/song/url?id=${id}&level=exhigh`;
-  return await http.get(url);
+export const reqSongUrl = id => {
+  return http.get('/song/url', { params: { id, level: 'exhigh' } });
 };
 
 /**
@@ -32,10 +40,8 @@ export const reqSongUrl = async id => {
  * @param {number} id 
  * @returns music-lyric
  */
-export const reqSongLyric = async id => {
-  const url = `/lyric?id=${id}`;
-  return await http.get(url)
-
+export const reqSongLyric = id => {
+  return http.get('/lyric', { params: { id } })
 }
 
 /**
@@ -44,23 +50,78 @@ export const reqSongLyric = async id => {
  * @param {number} id 
  * @returns music-imageUrl
  */
-export const reqSongDetail = async id => {
-  const url = `/song/detail?ids=${id}`;
-  return await http.get(url)
+export const reqSongDetail = id => {
+  return http.get('/song/detail', { params: { ids: id } })
+}
+
+/**
+ * 批量获取歌曲详情
+ * /song/detail 的 ids 支持逗号分隔，一次拿多首，用于给历史收藏补封面
+ * @param {Array<number|string>} ids
+ */
+export const reqSongDetailBatch = ids => {
+  const list = Array.isArray(ids) ? ids.join(',') : String(ids)
+  return http.get('/song/detail', { params: { ids: list } })
 }
 
 /**
  * 异步请求歌曲评论数据
  * 
  * 该函数通过HTTP GET请求获取指定歌曲ID的评论数据。
- * 使用者需要提供歌曲的ID，函数将拼接请求URL并发送请求。
  * 
  * @param {number} id - 歌曲的ID，用于构建请求URL，识别特定歌曲的评论。
  * @returns {Promise} 返回一个Promise对象，解析后的结果为HTTP请求的响应数据。
  */
-export const reqSongComment = async id => {
-  // 构建请求URL，包含歌曲ID
-  const url = `/comment/music?id=${id}`;
-  // 发送GET请求获取歌曲评论数据
-  return await http.get(url)
+export const reqSongComment = id => {
+  // 取 30 条：歌词页底部每次展示 6 条，翻 5 次刚好看完
+  return http.get('/comment/music', { params: { id, limit: 30 } })
+}
+
+/**
+ * 获取歌手歌曲（可翻页）
+ * 说明：/artist/top/song 只能一次拿固定 50 首热门，无法触底加载；
+ * /artist/songs 支持 limit/offset，order=hot 时按热度排序，正好满足「30 首一页 + 触底加载」。
+ * @param {number} id 歌手 id
+ * @param {number} limit 每页数量
+ * @param {number} offset 偏移量
+ * @param {string} order hot（热门）/ time（时间）
+ */
+export const reqArtistSongs = (id, limit = 30, offset = 0, order = 'hot') => {
+  return http.get('/artist/songs', { params: { id, limit, offset, order } })
+}
+
+/**
+ * 推荐歌单（首页个性化推荐）
+ * 免登录；返回字段带 playCount、trackCount、copywriter、picUrl，适合做卡片
+ * @param {number} limit 数量
+ */
+export const reqPersonalizedPlaylists = (limit = 30) => {
+  return http.get('/personalized', { params: { limit } })
+}
+
+/**
+ * 每日推荐歌曲
+ * 未登录也会返回一份日推（登录后才是账号专属口味）
+ */
+export const reqRecommendSongs = () => {
+  return http.get('/recommend/songs')
+}
+
+/**
+ * 歌单详情元信息：名称、封面、作者、标签、简介、播放量、歌曲数
+ * @param {number} id 歌单 id
+ */
+export const reqPlaylistInfo = id => {
+  return http.get('/playlist/detail', { params: { id } })
+}
+
+/**
+ * 获取歌单详情
+ * @param {number} id 
+ * @param {number} limit
+ * @param {number} offset
+ * @returns {Promise} 返回一个Promise对象，解析后的结果为HTTP请求的响应数据。
+ */
+export const reqPlayListDetail = (id, limit = 30, offset = 0) => {
+  return http.get('/playlist/track/all', { params: { id, limit, offset } })
 }

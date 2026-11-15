@@ -1,74 +1,67 @@
 import gsap from "gsap";
 
-const SCALE = 100; // 定义常量，提高代码的可读性和可维护性
+// 数值区间限制
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const transTime = (time) => {
-  // 使用Math.floor确保结果为整数，然后通过除以SCALE得到带有两位小数的结果
-  // 这种方式在处理大数时可能会有精度损失，但保留了原始功能的要求
-  let result = Math.floor(time * SCALE) / SCALE;
-  return result;
-}
-const enterLeave = (time) => {
-  if (time < 0 || Number.isNaN(time)) return 1.2;
-  return transTime(time * 0.1);
-}
 /**
- * 处理进入场景的逻辑。
- * 
- * 该函数旨在封装进入场景时的时间处理逻辑。它通过调用`enterLeave`函数来实现，
- * 
- * @param {number} time - 表示进入场景的特定时间点。
- * @returns {any} 返回`enterLeave`函数的执行结果。
+ * 歌词入场动画
+ *
+ * 说明：原实现把「入场 + 延迟出场」放在同一条时间线上，且复用同一个 DOM 节点。
+ * 索引一变就 clear() 重建，导致上一句的出场动画永远播不完 —— 视觉上就是「淡出消失」。
+ * 现在把入场/出场拆成两个独立函数，分别作用在「当前句」和「上一句」两个元素上，
+ * 出场立即开始，不再等到下一句的时刻。
+ *
+ * @param {HTMLElement} el - 当前歌词元素
+ * @param {number} [remaining=0] - 距离下一句歌词的剩余秒数，用于缩放入场时长
+ * @returns {gsap.core.Tween|null}
  */
-const enter = (time) => {
-  return enterLeave(time)
-}
-// 元素展示的时间
-const delay = (time) => {
-  // 处理time小于0的情况
-  if (time < 0 || Number.isNaN(time)) {
-    return 10;
-  }
-  // 处理time >= 0的情况
-  return transTime(time * 0.6);
-}
-const leave = (time) => {
-  return enterLeave(time)
-}
-// 使用TweenMax库的timeline方法创建一个时间线
-// 参数：timeline(时间线对象)，el(需要动画的元素)，disTime(显示时间)
-export function lyricsTimeline (timeline, el, disTime = 1000) { // 默认值为1000毫秒，可以根据实际情况调整
-  // 参数有效性检查
-  if (!timeline || !el) {
-    console.error('Invalid timeline or element provided.');
-    return; // 提前退出函数以避免运行时错误
-  }
-  if (typeof disTime !== 'number') {
-    console.error('Invalid duration time provided.');
-    return;
-  }
-
-  // 将元素渐入舞台，持续时间为enter(disTime)
-  timeline.fromTo(el, {
+export function lyricEnter (el, remaining = 0) {
+  if (!el) return null
+  // 剩余时间越长，入场越从容；限制在 0.35s ~ 1.2s，避免极端值
+  const duration = remaining > 0 ? clamp(remaining * 0.45, 0.35, 1.2) : 0.45
+  return gsap.fromTo(el, {
+    y: 18,
     autoAlpha: 0,
-    scaleY: 1.5,
+    filter: "blur(2px)"
   }, {
-    duration: enter(disTime), // 假设这些函数返回合理的动画持续时间
+    y: 0,
     autoAlpha: 1,
-    scaleY: 1
-  })
-
-  // 将元素渐出舞台，持续时间为leave(disTime)，延迟时间为delay(disTime)
-  timeline.to(el, {
-    scaleY: 1.5,
-    delay: delay(disTime), // 增加延迟时间
-    duration: leave(disTime), // 动画持续时间由leave函数决定
-    autoAlpha: 0,
+    filter: "blur(0px)",
+    duration,
+    ease: "power2.out",
+    overwrite: "auto"
   })
 }
 
-export function picTimeline (timeline, el, duration = 60000) {
-  // 参数有效性检查
+/**
+ * 歌词出场动画：立即淡出并上浮
+ * @param {HTMLElement} el - 上一句歌词元素
+ * @returns {gsap.core.Tween|null}
+ */
+export function lyricLeave (el) {
+  if (!el) return null
+  return gsap.fromTo(el, {
+    y: 0,
+    autoAlpha: 1,
+    filter: "blur(0px)"
+  }, {
+    y: -18,
+    autoAlpha: 0,
+    filter: "blur(4px)",
+    duration: 0.28,
+    ease: "power2.in",
+    overwrite: "auto"
+  })
+}
+
+/**
+ * 创建图片旋转动画时间线
+ * @param {gsap.core.Timeline} gsap - 工具 timeline 
+ * @param {Element} el - 目标元素
+ * @param {number} duration - 动画时长，单位毫秒
+ * returns {gsap.core.Timeline} - 返回传入的 timeline，方便链式调用
+ */
+export function picTimeline (timeline, el, duration = 60000) {  // 参数有效性检查
   if (!timeline || !el) {
     console.error('Invalid timeline or element provided.');
     throw new Error('Invalid timeline or element provided.'); // 抛出错误
@@ -80,34 +73,46 @@ export function picTimeline (timeline, el, duration = 60000) {
     ease: "linear",
   })
 }
+
+const ANIMATION_DURATION = 0.2; // 提取动画时长为常量
+
 /**
- * 使用GSAP库动画化目标元素，使其透明度变为0并按指定比例缩放，最终隐藏元素。
- * 此函数专为实现元素的平滑隐藏效果而设计。
- * 
- * @param {HTMLElement} target - 需要进行动画处理的目标元素。
- * @param {number} toScale - 元素最终的缩放比例，用于控制元素隐藏时的大小变化。
- * @param {Function} onComplete - 动画完成时调用的回调函数，可用于执行隐藏后的其他操作。
+ * 将元素动画隐藏
+ * @param {Object} target - GSAP动画目标元素
+ * @param {number} toScale - 目标缩放比例
+ * @param {number} ANIMATION_DURATION - 动画持续时间
+ * @param {Function} [onComplete] - 动画完成后的回调函数
  */
-export function animateToHidden (target, toScale, onComplete) {
-  // 使用GSAP的gsap.to方法创建动画，将目标元素的透明度变为0，缩放比例变为toScale，动画持续0.2秒
-  // 动画完成后执行onComplete函数
+export function animateToHidden (target, ANIMATION_DURATION, toScale, onComplete) {
   gsap.to(target, {
     autoAlpha: 0,
-    duration: 0.2,
+    duration: ANIMATION_DURATION,
     scale: toScale,
-    onComplete: onComplete
+    onComplete,
   });
 }
 
-export function animateToVisible (target, fromScale) {
-  gsap.fromTo(target, {
-    scale: fromScale,
-    autoAlpha: 0,
-  }, {
-    scale: 1,
-    duration: 0.2,
-    autoAlpha: 1,
-  });
+/**
+ * 将元素动画显示
+ * @param {Object} target - GSAP动画目标元素
+ * @param {number} fromScale - 起始缩放比例 
+ * @param {number} ANIMATION_DURATION - 动画持续时间
+ * @param {Function} [onComplete] - 动画完成后的回调函数
+ */
+export function animateToVisible (target, ANIMATION_DURATION, fromScale, onComplete) {
+  gsap.fromTo(
+    target,
+    {
+      scale: fromScale,
+      autoAlpha: 0,
+    },
+    {
+      scale: 1,
+      duration: ANIMATION_DURATION,
+      autoAlpha: 1,
+      onComplete,
+    }
+  );
 }
 
 /**
@@ -118,13 +123,13 @@ export function animateToVisible (target, fromScale) {
  * @param {number} y - 元素隐藏后的垂直偏移量，用于动画效果。
  * @param {Function} onComplete - 动画完成后的回调函数。
  */
-export function animatePanelHide (target, y, onComplete) {
+export function PanelHideY (target, y, onComplete) {
   // 使用GSAP的to方法来创建一个动画，将目标元素向下移动并逐渐透明化
   gsap.to(target, {
     y: y,
     autoAlpha: 0,
-    duration: 0.2,
-    onComplete: onComplete
+    duration: ANIMATION_DURATION,
+    onComplete
   })
 }
 
@@ -134,16 +139,94 @@ export function animatePanelHide (target, y, onComplete) {
  * 该函数利用GSAP的fromTo方法来创建一个从起始位置到结束位置的动画效果，同时伴随透明度的变化，用于动画化显示面板或其他DOM元素。
  * 
  * @param {HTMLElement} target - 需要进行动画化的DOM元素目标。
- * @param {number} startToY - 动画开始时元素的y轴位置。
- * @param {number} endToY - 动画结束时元素的y轴位置。
+ * @param {number} startY - 动画开始时元素的y轴位置。
+ * @param {number} endY - 动画结束时元素的y轴位置。
  */
-export function animatePanelShow (target, startToY, endToY) {
+export function PanelShowY (target, startY, endY) {
   gsap.fromTo(target, {
-    y: startToY,
+    y: startY,
     autoAlpha: 0
   }, {
-    y: endToY,
+    y: endY,
     duration: 0.5,
     autoAlpha: 1
   })
+}
+
+/* ------------------------------------------------------------------
+ * 移动端侧栏抽屉
+ * 说明：autoAlpha 的 0 会同时把 visibility 设为 hidden，
+ * 元素关闭后天然不可点击，所以不需要额外处理 pointer-events。
+ * ------------------------------------------------------------------ */
+const DRAWER_IN_DURATION = 0.36
+const DRAWER_OUT_DURATION = 0.26
+const MASK_DURATION = 0.2
+
+/**
+ * 打开抽屉：从左滑入 + 淡入，同时点亮遮罩
+ * @param {HTMLElement} el 抽屉元素
+ * @param {HTMLElement} [mask] 遮罩元素
+ */
+export function drawerOpen (el, mask) {
+  if (mask) {
+    gsap.to(mask, {
+      autoAlpha: 1,
+      duration: MASK_DURATION,
+      ease: "power1.out",
+      overwrite: "auto"
+    })
+  }
+  if (!el) return null
+  return gsap.fromTo(el,
+    { xPercent: -100, autoAlpha: 0 },
+    {
+      xPercent: 0,
+      autoAlpha: 1,
+      duration: DRAWER_IN_DURATION,
+      ease: "power3.out",
+      overwrite: "auto"
+    }
+  )
+}
+
+/**
+ * 关闭抽屉：向左滑出 + 淡出，同时熄灭遮罩
+ * @param {HTMLElement} el 抽屉元素
+ * @param {HTMLElement} [mask] 遮罩元素
+ * @param {Function} [onComplete] 关闭完成回调
+ */
+export function drawerClose (el, mask, onComplete) {
+  if (mask) {
+    gsap.to(mask, {
+      autoAlpha: 0,
+      duration: MASK_DURATION,
+      ease: "power1.in",
+      overwrite: "auto",
+      onComplete
+    })
+  }
+  if (!el) return null
+  return gsap.to(el, {
+    xPercent: -100,
+    autoAlpha: 0,
+    duration: DRAWER_OUT_DURATION,
+    ease: "power2.in",
+    overwrite: "auto"
+  })
+}
+
+/**
+ * 不带动画地把抽屉置为关闭态（首次进入、切换断点时用）
+ */
+export function drawerSetClosed (el, mask) {
+  if (el) gsap.set(el, { xPercent: -100, autoAlpha: 0 })
+  if (mask) gsap.set(mask, { autoAlpha: 0 })
+}
+
+/**
+ * 清除抽屉上的内联样式，恢复成桌面端常驻布局
+ */
+export function drawerReset (el, mask) {
+  if (el) gsap.set(el, { clearProps: "transform,opacity,visibility" })
+  if (mask) gsap.set(mask, { autoAlpha: 0 })
 }
