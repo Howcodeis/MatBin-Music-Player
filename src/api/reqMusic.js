@@ -20,7 +20,7 @@ import http from "../utils/axiosInterceptors";
    * @returns music-list
    */
 export const reqMusicList = (keywords, limit, offset) => {
-  // 用 /cloudsearch 而不是 /search：
+  // 用 /cloudsearch 而不是 /search，原因：
   // /search 的 album 只返回 picId、没有 picUrl，列表拿不到封面；
   // /cloudsearch 返回 al.picUrl，字段也更全（ar/al/dt），分页字段 songCount 一致。
   return http.get('/cloudsearch', { params: { keywords, limit, offset } })

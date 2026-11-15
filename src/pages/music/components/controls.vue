@@ -24,7 +24,7 @@ const smallMusicCover = computed(() => {
 })
 
 /*
- * 进度条上方的「当前时间 / 总时长」气泡
+ * 进度条上方的(当前时间 / 总时长)气泡
  * - 拖动时一定显示（isTouch 由 store 在 setProgress / setProgressDone 里维护）
  * - 桌面端鼠标悬浮到进度条上时也显示；手机/平板（无 hover 能力）不启用
  * - 位置始终按播放进度百分比走，两端用 clamp 留出半个标签宽度，避免贴边被裁掉
@@ -47,12 +47,12 @@ const handleProgressLeave = () => {
   isHovering.value = false
 }
 
-// 设备从「有鼠标」切到触屏（如拔掉扩展坞）时，清掉悬浮态
+// 设备从有鼠标切到触屏（如拔掉扩展坞）时，清掉悬浮态
 watch(canHover, value => {
   if (!value) isHovering.value = false
 })
 
-// 滑块用「秒」而不是百分比：max = 歌曲总时长，step = 1 秒
+// 滑块用秒而不是百分比：max = 歌曲总时长，step = 1 秒
 const sliderMax = computed(() => {
   const duration = Number(currentMusicInfo.value.duration)
   return Number.isFinite(duration) && duration > 0 ? duration : 1
@@ -61,7 +61,7 @@ const sliderMax = computed(() => {
 const dragTipStyle = computed(() => {
   const duration = Number(currentMusicInfo.value.duration) || 0
   const time = Number(currentMusicInfo.value.currentTime) || 0
-  // 位置仍按百分比渲染，但由「秒 / 总秒数」现算，不再依赖单独的百分比字段
+  // 位置仍按百分比渲染，但由(秒 / 总秒数)现算，不再依赖单独的百分比字段
   const percent = duration > 0 ? (time / duration) * 100 : 0
   const clamped = Math.min(100, Math.max(0, percent))
   // 3.1rem ≈ 半个气泡宽 + 6px，保证贴边时气泡边缘不顶到面板边框
@@ -324,10 +324,6 @@ const toggleCurrentFavorite = () => {
 .iconfont {
   @apply text-xl text-[#ffffff] h-6 hover:scale-110 active:scale-50 duration-300 ease-in-out cursor-pointer mx-[0.4rem]
 }
-
-/* .iconfont:active {
-  @apply scale-[1.1]
-} */
 
 /* 已收藏的爱心：红色实心，和未收藏的白色描边区分开 */
 .iconfont.is-favorite {

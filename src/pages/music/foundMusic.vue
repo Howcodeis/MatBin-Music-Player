@@ -23,7 +23,7 @@ const store = musicStatus()
 const isMobile = useIsMobile()
 const { dailySongs, playType } = storeToRefs(store)
 const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
-// 区分「还在加载」和「加载完但没数据」，接口失败时不会一直显示加载中
+// 区分还在加载和加载完但没数据，接口失败时不会一直显示加载中
 const loading = ref(true)
 
 // 今天的日期，放在标题下面当副标题

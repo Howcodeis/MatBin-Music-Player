@@ -2,10 +2,6 @@
  * @Author: Matbin
  * @Date: 2026-11-13
  * @Description: 歌曲表格的公共样式与触底加载
- *
- * 原来 playList.vue 和 hotPlayList.vue 各写了一份完全相同的 4 个样式函数，
- * 且都用「4 秒一次 + 弹提示」的方式限制触底频率，滚动快时会刷屏。
- * 这里统一成一份，并用 loading 标记做真正的并发保护。
  */
 import { ref } from 'vue'
 

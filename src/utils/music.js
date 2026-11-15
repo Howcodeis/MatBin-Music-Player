@@ -2,13 +2,6 @@
  * @Author: Matbin
  * @Date: 2023-11-17
  * @Description: 音乐领域的常量与纯函数
- *
- * 从原来的 components/music/musicTools.js 拆出。
- * 这里只放无副作用、不依赖网络请求的逻辑，保持在依赖链底部；
- * 接口请求封装见 api/musicService.js。
- */
-
-/*
  * @Description: 音乐播放模式以及播放列表模式
  */
 export const PLAYMODEL = [
@@ -45,8 +38,6 @@ export const toHttps = (url) => String(url || '').replace(/^http:\/\//i, 'https:
 
 /*
  * @Description: 随机播放状态值
- * 说明：原实现用递归且漏传 len，递归结果被丢弃后返回 undefined，
- * 导致约 1/len 的概率切歌失败。改为循环取值，天然不会返回 undefined。
  */
 const randomPlay = (index, len) => {
   // 只有一首歌（或列表为空）时只能停在原地

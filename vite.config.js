@@ -65,13 +65,6 @@ const elementPlusSliderEsbuildPatch = () => ({
 
 /* ------------------------------------------------------------------
  * 开发态自动拉起网易云 API
- *
- * 目标：npm run dev 一个命令就能听歌，不用再单独开终端跑 API。
- * 行为：
- *   1. 端口已有服务（比如你手动开的）→ 直接复用，不重复启动；
- *   2. 找不到 API 目录或缺少 node_modules → 打印提示并跳过，不影响 Vite 启动；
- *   3. 只有「自己拉起来的」子进程才会在退出时结束，手动开的不会被动。
- *
  * 路径优先级：环境变量 NETEASE_API_DIR > 内置候选路径。
  * 换位置时设 NETEASE_API_DIR 即可，例如 PowerShell：
  *   $env:NETEASE_API_DIR="D:\path\to\NeteaseCloudMusicApi"; npm run dev

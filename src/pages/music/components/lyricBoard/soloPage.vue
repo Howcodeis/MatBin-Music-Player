@@ -125,11 +125,8 @@ watch(() => currentMusicInfo.value.id, () => {
 
 /* ---------------- 评论区折叠 ----------------
  * showComments 控制评论区是否展开；默认展开（箭头向下）。
- * 收起时：.comment-zone 高度 20% → 0（CSS transition 动画），
  * 上方 .lyric-block 用 flex:1 自动长高，歌词在块内居中，因此会平滑向下移并居中；
  * 箭头 rotate 180° 变向上。再点一次反向展开。
- * 用 CSS 而非 GSAP：歌词节点上 GSAP 已写 transform(y)，这里只让 flex 高度过渡驱动重排，
- * 不与既有动画抢 transform，调时长/缓动只改一处。
  */
 const showComments = ref(false)
 const toggleComments = () => { showComments.value = !showComments.value }
@@ -238,11 +235,6 @@ onUnmounted(() => {
   @apply flex justify-center items-center
 }
 
-/*
- * 外层只负责定位与居中，内层负责文字样式。
- * 这样 GSAP 写在外层上的 y 位移不会和居中用的 transform 冲突，
- * background-clip:text 也不受 flex 容器的匿名盒影响。
- */
 .lyric-line {
   position: absolute;
   inset: 0;

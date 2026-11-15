@@ -31,7 +31,7 @@ import { withTranslation } from "../utils/lyric"
 
 const audio = new Audio()
 const closeBeforeVolume = ref(0)
-// 上一次播放失败的地址，用于阻断「失败 -> 重新拉地址 -> 再次失败」的死循环
+// 上一次播放失败的地址，用于阻断失败 -> 重新拉地址 -> 再次失败的死循环
 let lastFailedUrl = ''
 // 切歌中标记，避免 ended 在高频 timeupdate 里被重复触发
 let switching = false
@@ -57,7 +57,7 @@ export const musicStatus = defineStore('musicinfo', {
   // readAndWrite
   state: () => ({
     keywords: '', // 搜索
-    searchVersion: 0, // 每次「新搜索」自增，列表页据此把表格滚动复位到顶部
+    searchVersion: 0, // 每次新搜索自增，列表页据此把表格滚动复位到顶部
     playType: PLAYTYPE.SEARCH,// 播放列表
     playMode: PLAYMODEL[0],// 播放顺序
     currentMusic: '', // 当前歌曲
@@ -302,10 +302,10 @@ export const musicStatus = defineStore('musicinfo', {
       const nextIndex = getNextSong(tempList, this.playMode, isPlayNext, this.currentMusicInfo)
       if (nextIndex < 0 || !tempList[nextIndex]) return this.replayCurrent()
       // 记下方向：若目标歌曲也不可播，自动跳过要顺着同方向继续走，
-      // 否则用户点「上一首」时会反而往前跳，体感像点错了按钮
+      // 否则用户点上一首时会反而往前跳，体感像点错了按钮
       this.setMusicInfo(tempList[nextIndex], { skipForward: isPlayNext })
     },
-    // 加入 / 取消「我喜欢的音乐」
+    // 加入 / 取消我喜欢的音乐
     toggleFavorite (music) {
       if (!music?.id) return
       const index = this.favorite.findIndex(item => item?.id === music.id)
@@ -370,7 +370,7 @@ export const musicStatus = defineStore('musicinfo', {
     /*
      * 彻底停掉音源。
      * 只把 isPlay 置 false 是不够的：audio.src 上还挂着上一首，
-     * 声音会继续放上一首，而封面 / 歌词 / 进度条已经换成这一首，出现「音画错位」。
+     * 声音会继续放上一首，而封面 / 歌词 / 进度条已经换成这一首，出现音画错位。
      */
     stopAudio () {
       try {
@@ -397,7 +397,7 @@ export const musicStatus = defineStore('musicinfo', {
     /*
      * 遇到不可播放的歌曲：先停播（避免上一首继续响），再顺着用户操作的方向自动跳过。
      * @param {boolean} skipForward true 往后跳（下一首 / 自然播放结束），false 往前跳（上一首）
-     * @param {string} reason 不可播放的原因，用于提示（不含「已自动跳过」后缀）
+     * @param {string} reason 不可播放的原因，用于提示
      */
     skipUnplayable (skipForward = true, reason = '') {
       this.stopAudio()
@@ -455,7 +455,7 @@ export const musicStatus = defineStore('musicinfo', {
         /*
          * 地址和详情分开判定：
          * - 拿地址失败 = 接口 / 网络异常，自动跳过毫无意义（跳过去一样拉不到），只能停播提示；
-         * - 详情失败只是少个封面 / 专辑名，不该把「这首歌无版权」误判成「网络挂了」。
+         * - 详情失败只是少个封面 / 专辑名，不该把无版权误判成网络挂了。
          * 所以用 allSettled 而不是 all，避免一个失败把另一个的结果也丢掉。
          */
         const [urlRet, detailRet] = await Promise.allSettled([
@@ -581,7 +581,7 @@ export const musicStatus = defineStore('musicinfo', {
         // 换 src 会让上一次 play() 主动 reject，这种不是真的失败，直接忽略
         if (isStale()) return false
         this.isPlay = false
-        // 同一个地址只重试一次，避免「失败 -> 重新拉地址 -> 再次失败」的无限循环
+        // 同一个地址只重试一次，避免失败 -> 重新拉地址 -> 再次失败的无限循环
         if (lastFailedUrl === url) {
           normalBack('warning', '音频加载失败，请切换歌曲后重试')
           return false
@@ -654,7 +654,7 @@ export const musicStatus = defineStore('musicinfo', {
         return
       }
       if (!this.currentMusicInfo.url) {
-        // 有歌名说明是「这首歌不可播」，没歌名就是还没点过任何歌曲
+        // 有歌名说明是这首歌不可播，没歌名就是还没点过任何歌曲
         return normalBack('info', this.currentMusicInfo.name ? '这首歌暂无可用播放地址' : '暂无歌曲')
       }
       // 浏览器里还挂着有效音源时直接恢复，避免重新拉流
@@ -698,10 +698,9 @@ export const musicStatus = defineStore('musicinfo', {
       this.syncLyricIndex(time)
     },
     /*
-     * 拖动中只更新预览时间，不碰 audio.currentTime。
-     * 注意：isTouch（是否拖动）不再在这里维护 —— 它由真正的指针事件控制（见 controls.vue 的
+     * 拖动中只更新预览时间，不会更新audio.currentTime。
      * pointerdown / 全局 pointerup），否则 el-slider 在切歌时因 :max / :model-value 变化自行触发
-     * 的 @input 会被误判成「用户开始拖动」，而这次 emit 没有配套的 @change，isTouch 就会永久卡在
+     * 的 @input 会被误判成用户开始拖动，而这次 emit 没有配套的 @change，isTouch 就会永久卡在
      * true，之后所有 timeupdate 都跳过进度写入，进度条冻结但歌照常播。
      */
     setProgress (time) {

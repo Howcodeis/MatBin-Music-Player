@@ -19,7 +19,7 @@ defineOptions({
 
 const router = useRouter()
 const { recommendedPlayLists } = storeToRefs(musicStatus())
-// 区分「还在加载」和「加载完但没数据」，否则接口失败会一直停在骨架屏
+// 区分还在加载和加载完但没数据，否则接口失败会一直停在骨架屏
 const loading = ref(true)
 
 // 卡片墙的滚动发生在 MusicLayout 的外层容器上，这里向上找到它

@@ -16,10 +16,10 @@ defineOptions({
 const isMobile = useIsMobile()
 const { favorite, playType } = storeToRefs(musicStatus())
 const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
-// 表格数据用「过滤后的收藏」，关键词来自顶部搜索框（和 searchBar 共用同一个 ref）
+// 表格数据用过滤后的收藏，关键词来自顶部搜索框（和 searchBar 共用同一个 ref）
 const { keyword: favoriteKeyword, filteredFavorite } = useFavoriteFilter()
 
-// 双击播放：切到「我喜欢」作为当前播放列表，上下首就在收藏里轮转
+// 双击播放：切到我喜欢作为当前播放列表，上下首就在收藏里轮转
 const playChoose = (row) => {
   playType.value = PLAYTYPE.FAVORITE
   musicStatus().setMusicInfo(row)
@@ -43,7 +43,7 @@ onMounted(() => {
 
 <template>
   <div class="box-border absolute h-full w-full">
-    <!-- 空状态：区分「收藏本来就是空的」和「筛选不到结果」 -->
+    <!-- 空状态：区分收藏本来就是空的和筛选不到结果 -->
     <div v-if="!favorite.length" class="flex flex-col items-center justify-center w-full h-full text-slate-300 gap-3">
       <i class="iconfont icon-aixin empty-heart"></i>
       <p class="text-sm">还没有喜欢的歌曲</p>

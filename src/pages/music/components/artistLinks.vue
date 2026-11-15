@@ -1,11 +1,6 @@
 <script setup>
 /*
  * 可点击的歌手名。
- *
- * 兼容两种字段：搜索结果用 artists，歌单详情用 ar；
- * currentMusicInfo.artists 初始值是空字符串，所以这里统一用 Array.isArray 兜底，
- * 不能直接 v-for 一个字符串（会逐字符渲染）。
- *
  * 点击用 @click.stop：列表行本身绑了 row-click 播放，不阻止冒泡会「点了歌手却开始放歌」。
  */
 import { computed, defineOptions } from 'vue'

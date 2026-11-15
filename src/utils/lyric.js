@@ -3,11 +3,6 @@
  * @Date: 2026-11-13
  * @Description: LRC 歌词解析（纯函数，不依赖网络与 DOM，可直接单测）
  *
- * 旧实现直接 `lrc.split(']')` 取 `words[0]` / `words[1]`，有三个硬伤：
- * 1. `[ti:标题]` 这类元信息行会被算成 `time: NaN`
- * 2. `[00:01.00][00:20.00]副歌` 这种一行多时间戳只会保留第一段
- * 3. 空行会产出 `{ time: NaN, word: undefined }`
- * NaN 进入 store 的二分查找后会破坏「按时间升序」的前置条件，导致歌词高亮错行。
  */
 
 // [mm:ss] [mm:ss.SS] [mm:ss.SSS] [mm:ss:SS]
@@ -74,12 +69,6 @@ export function parseLrc (raw) {
  * @Author: Matbin
  * @Date: 2026-11-13
  * @Description: 把翻译歌词（tlyric）按时间戳对齐到原词上，产出带 tword 字段的数组。
- *
- * 对齐规则：
- * - 两侧都有时间轴：用二分查找取时间最近的一条，偏差在容差内才算匹配；
- *   只挂 tword、不改变原数组顺序，不影响现有的歌词索引与动画。
- * - 两侧都没有时间轴（纯文本歌词）：按行号对齐。
- * - 只有一侧有时间轴：退化为按行号对齐，匹配不上就没有翻译。
  *
  * @param {Array<{time:number|null, word:string}>} lyric 原词，需按时间升序
  * @param {Array<{time:number|null, word:string}>} tlyric 翻译词

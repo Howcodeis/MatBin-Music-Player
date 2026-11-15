@@ -3,9 +3,7 @@
  * @Date: 2023-11-21
  * @Description: 音乐业务服务层
  *
- * 从原来的 components/music/musicTools.js 拆出。
  * 这些函数是 api/reqMusic.js 的上层封装：发请求 + 校验 code + 清洗返回数据。
- * 放在 api 目录而不是 utils，避免 utils 反向依赖接口层。
  * 纯常量与格式化函数在 utils/music.js。
  */
 import { reqMusicList, reqSongDetail, reqSongDetailBatch, reqSongLyric, reqSongUrl, reqSongComment, reqPersonalizedPlaylists, reqRecommendSongs, reqPlaylistInfo, reqPlayListDetail, reqArtistSongs } from "./reqMusic";
@@ -21,7 +19,7 @@ export const getSongUrl = async (id) => {
   // code 不是 200 才是真正的接口异常（网络/服务端问题），需要上层提示重试
   if (res?.code != 200) throw new Error("获取歌曲路径失败")
   // 无版权 / 已下架：接口仍返回 200，但 data 里是 null 或 url 为 null。
-  // 这种情况不算「出错」，返回 null 交给上层按「不可播放」处理（停播 + 自动跳过），
+  // 这种情况不算出错，返回 null 交给上层按不可播放处理（停播 + 自动跳过），
   // 否则会被当成接口异常，列表里一遇灰色歌曲就停在原地。
   const song = res?.data?.[0]
   if (!song?.url) return null

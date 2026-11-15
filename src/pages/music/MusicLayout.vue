@@ -95,14 +95,12 @@ watch(() => route.fullPath, () => {
   border-image: linear-gradient(to right, gray, white) 1;
 }
 
-/* 宽屏：随面板高度自适应，透明底，靠右侧分割线区分 */
 .sider-panel {
   position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   width: 10%;
-  /* 侧栏要容得下「我喜欢的音乐」六个字，108px 会截断 */
   min-width: 124px;
   height: 100%;
   color: #fff;
@@ -119,11 +117,6 @@ watch(() => route.fullPath, () => {
   visibility: hidden;
 }
 
-/*
- * 窄屏抽屉：
- * 1. 独立的不透明背景，避免直接压在模糊封面上导致文字和底色糊成一片
- * 2. 右侧圆角 + 投影，明确「这是一层浮层」而不是布局被压扁
- */
 @media (max-width: 639.98px) {
   .sider-panel--drawer {
     position: absolute;
@@ -139,11 +132,6 @@ watch(() => route.fullPath, () => {
     border-radius: 0 1rem 1rem 0;
     background: linear-gradient(165deg, #3a3a6b 0%, #232340 100%);
     box-shadow: 12px 0 32px rgba(0, 0, 0, 0.5);
-    /*
-     * JS 未执行时的兜底：只藏不位移。
-     * 这里千万不能写 transform，GSAP 会把 CSS 里的 translateX(-100%) 解析成像素 x，
-     * 再叠加自己的 xPercent，最终变成 translate(-100%) translate(-240px)，抽屉直接飞出屏幕。
-     */
     opacity: 0;
     visibility: hidden;
   }

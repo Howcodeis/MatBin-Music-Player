@@ -26,7 +26,7 @@ const { keyword: artistKeyword, resetArtistKeyword } = useArtistFilter()
  * - 其他页：保持原来的网络搜索（回车 / 点按钮 → 请求接口 → 结果展示在列表页）。
  */
 const isFavoriteMode = computed(() => route.name === 'favorite')
-// 歌手页同样是「页内筛选」：只在已加载的歌手热门里过滤，不发网络请求
+// 歌手页同样是页内筛选：只在已加载的歌手热门里过滤，不发网络请求
 const isArtistMode = computed(() => route.name === 'artistSongs')
 // 所有页内筛选模式的集合，用来统一控制搜索历史面板
 const isLocalFilterMode = computed(() => isFavoriteMode.value || isArtistMode.value)

@@ -5,7 +5,7 @@
  *
  * 断点与 Tailwind 的 sm 对齐（640px），保证 CSS 与 JS 判断不会打架：
  * 之前 musicDisplay 用 640 判 isMobile，而元素上的背景色用的是 max-sm:，
- * 两者一致才能让「抽屉什么时候该有背景色」和「什么时候该变成覆盖层」同步。
+ * 两者一致才能让抽屉什么时候该有背景色和什么时候该变成覆盖层同步。
  */
 import { ref } from 'vue'
 
@@ -13,7 +13,7 @@ import { ref } from 'vue'
 const MOBILE_QUERY = '(max-width: 639.98px)'
 // 有精确指针、且支持 hover 的设备：桌面端鼠标。
 // 用能力判断而不是纯宽度：平板（含 iPad）即便宽度超过 1024，指针也是 coarse / 不支持 hover，
-// 这类设备上「悬浮出提示」没有意义，还会被点击后的粘滞 hover 误触发。
+// 这类设备上悬浮出提示没有意义，还会被点击后的粘滞 hover 误触发。
 const HOVER_QUERY = '(hover: hover) and (pointer: fine)'
 
 const isMobile = ref(false)

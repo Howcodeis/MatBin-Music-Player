@@ -21,14 +21,14 @@ const isMobile = useIsMobile()
 
 const { artistSongs, artistInfo, playType } = storeToRefs(store)
 const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
-// 表格数据用「筛选后的歌手热门」，关键词来自顶部搜索框（和 searchBar 共用同一个 ref）
+// 表格数据用筛选后的歌手热门，关键词来自顶部搜索框
 const { keyword: artistKeyword, filteredArtistSongs, resetArtistKeyword } = useArtistFilter()
 
 const artistName = computed(() => String(route.query.name || artistInfo.value.name || '歌手'))
 
 /*
  * 返回用户点进来时所在的页面。
- * 来源页由 useGoArtist 写进 query.from；没有来源（直接打开链接）时退回浏览器上一页。
+ * 来源页由 useGoArtist 写进 query.from；没有来源时退回浏览器上一页。
  */
 const goBack = () => {
   const from = route.query.from
@@ -40,7 +40,7 @@ const goBack = () => {
   router.back()
 }
 
-// 歌手 id 变化（首次进入 / 在列表里点了另一位歌手）都重新拉第一页
+// 歌手 id 变化都重新拉第一页
 watch(() => route.params.id, (id) => {
   if (!id) return
   resetArtistKeyword()
@@ -54,7 +54,7 @@ const { handleLoadMore } = useLoadMore(async () => {
   await store.loadMoreArtist()
 })
 
-// 点击行播放：切到「歌手热门」作为当前播放列表，上下首就在该歌手的热门里轮转
+// 点击行播放：切到歌手热门作为当前播放列表，上下首就在该歌手的热门里轮转
 const playChoose = (row) => {
   playType.value = PLAYTYPE.ARTIST
   store.setMusicInfo(row)
@@ -70,7 +70,7 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
 
 <template>
   <div class="box-border absolute h-full w-full flex flex-col">
-    <!-- 歌手信息头：名字 + 歌曲数（有筛选时额外显示命中数） -->
+    <!-- 歌手信息头：名字 + 歌曲数 -->
     <div class="artist-head shrink-0">
       <div class="artist-head__name" :title="artistName">{{ artistName }}</div>
       <!-- 第二行：左边是歌曲信息，右边靠边放返回按钮 -->
@@ -91,7 +91,7 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
     </div>
 
     <div class="relative flex-1 min-h-0">
-      <!-- 空状态：区分「该歌手没歌」和「筛选不到」 -->
+      <!-- 空状态：区分该歌手没歌和筛选不到 -->
       <div v-if="!artistSongs.length" class="artist-empty">
         <i class="iconfont icon-sousuo artist-empty__icon"></i>
         <p class="text-sm">该歌手暂无热门歌曲</p>

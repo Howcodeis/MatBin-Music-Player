@@ -12,7 +12,7 @@ defineOptions({
   name: 'PlayList'
 })
 
-// 窄屏收起「专辑」列，把宽度让给歌曲名
+// 窄屏收起专辑列，把宽度让给歌曲名
 const isMobile = useIsMobile()
 
 const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
