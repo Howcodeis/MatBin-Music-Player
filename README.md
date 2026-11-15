@@ -4,7 +4,6 @@
 >
 > 数据来自 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)，项目本身不含后端；目前为个人开发 / 练习阶段，仅用于学习交流。
 >
-> 本文是对项目的完整介绍，原有的 `README.md` 保留为最初的项目说明。
 
 ---
 
