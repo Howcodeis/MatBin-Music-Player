@@ -54,7 +54,7 @@ const routes = [
         path: 'foundMusic',
         name: 'foundMusic',
         meta: {
-          menu: '发现音乐'
+          menu: '每日推荐'
         },
         component: FoundMusic,
       },

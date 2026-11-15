@@ -69,11 +69,17 @@ onMounted(async () => {
         <h1 class="daily-title">每日推荐</h1>
         <p class="daily-sub">{{ today }} · 根据你的口味生成 · {{ dailySongs.length }} 首</p>
       </div>
-      <button class="daily-play" type="button" :disabled="!dailySongs.length" title="从第一首开始播放"
-        @click="playAll">
-        <i class="iconfont icon-bofang"></i>
-        <span>播放全部</span>
-      </button>
+      <div>
+        <button class="daily-play" type="button" :disabled="!dailySongs.length" title="从第一首开始播放" @click="playAll">
+          <i class="iconfont icon-bofang"></i>
+          <span>播放全部</span>
+        </button>
+        <button class="daily-refresh" type="button" :disabled="!dailySongs.length" title="查收今日推荐"
+          @click="store.setDailySongs">
+          <i class="iconfont icon-liebiaoxunhuan"></i>
+          <span>查收今日推荐</span>
+        </button>
+      </div>
     </header>
 
     <!-- 歌曲列表 -->
@@ -88,16 +94,14 @@ onMounted(async () => {
         <el-table-column fixed :width="isMobile ? 38 : 60" label="#">
           <template #default="scope">
             <div class="index-num text-gray-200 select-none">
-              {{ (scope.$index + 1) < 10 ? "0" + (scope.$index + 1) : (scope.$index + 1) }}
-            </div>
+              {{ (scope.$index + 1) < 10 ? "0" + (scope.$index + 1) : (scope.$index + 1) }} </div>
           </template>
         </el-table-column>
         <el-table-column :width="isMobile ? 42 : 52" align="center">
           <template #default="scope">
             <i class="iconfont favorite-icon"
               :class="isFavorite(scope.row.id) ? 'icon-aixin1-copy is-favorite' : 'icon-aixin'"
-              :title="isFavorite(scope.row.id) ? '取消喜欢' : '加入我喜欢的音乐'"
-              @click.stop="toggleFavorite(scope.row)"></i>
+              :title="isFavorite(scope.row.id) ? '取消喜欢' : '加入我喜欢的音乐'" @click.stop="toggleFavorite(scope.row)"></i>
           </template>
         </el-table-column>
         <el-table-column label="歌曲" :min-width="isMobile ? 140 : 110">
@@ -167,6 +171,23 @@ onMounted(async () => {
   align-items: center;
   gap: 0.25rem;
   padding: 0.3rem 0.75rem;
+  /* 两个button间隔一点空间 */
+  margin-right: 0.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.daily-refresh {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.12);
@@ -181,12 +202,21 @@ onMounted(async () => {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
+.daily-refresh:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .daily-play:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
 .daily-play .iconfont {
+  font-size: 0.85rem;
+}
+
+.daily-refresh .iconfont {
   font-size: 0.85rem;
 }
 
@@ -246,6 +276,11 @@ onMounted(async () => {
   }
 
   .daily-play {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  .daily-refresh {
     padding: 0.25rem 0.6rem;
     font-size: 0.7rem;
   }
