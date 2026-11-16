@@ -1,0 +1,59 @@
+name: Deploy to Spaceship
+
+# 触发条件：
+#   - push 到 main 分支（日常迭代）
+#   - 手动触发（Actions 页面点 Run workflow，用于只改服务器设置时重发一次）
+on:
+  push:
+    branches: [main]
+    # 只改文档/部署配置时不必重新构建，省 CI 时间
+    paths-ignore:
+      - '**.md'
+      - 'deploy/**'
+      - '.github/**'
+  workflow_dispatch:
+
+# 同一时间只跑一个部署，避免两次 push 互相覆盖
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+        env:
+          # 构建期不需要 API 地址（前端走同源 /api），
+          # 这里留空即可；将来若改成独立 API 域名，在这里注入 VITE_API_BASE
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: 通过 FTP 同步 dist 到主机
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # dist 里的内容对应站点根目录
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          # 注意：千万不要打开 dangerous-clean-slate。
+          # server-dir 下还放着 .htaccess 和 netease-api/，
+          # 开启清空会把它们一起删掉，站点直接挂。
+          # 代价是旧版本的 assets 会累积，隔段时间手动清一次即可。
+          dangerous-clean-slate: false
+          log-level: standard
+          timeout: 60000
