@@ -43,7 +43,7 @@ defineProps({
   transition: color 0.25s ease;
 }
 
-/* 用内缩的圆角底色代替原来的 blur 滤镜，浅色背景上不会再糊成一团 */
+/* 内缩的圆角底色：比 blur 滤镜在浅色背景上更清晰，也不吃性能 */
 .routerStyle::before {
   content: '';
   position: absolute;

@@ -229,8 +229,7 @@ const toggleCurrentFavorite = () => {
     <!-- 图片 -->
     <div class="relative overflow-hidden left-1 rounded-2xl border-[1px] border-gray-500 w-[4rem] h-[4rem]"
       @click="toggleLyricBoard">
-      <img class="object-cover cursor-pointer w-full h-auto hover:scale-125 duration-300" :src="smallMusicCover"
-        alt="歌曲封面">
+      <img class="cover-img object-cover cursor-pointer w-full h-auto" :src="smallMusicCover" alt="歌曲封面">
     </div>
     <!-- 歌曲歌手 -->
     <div class="relative w-[55%] max-md:left-[8px] left-1 max-md:text-[0.8rem] text-[#ffffff]">
@@ -321,8 +320,37 @@ const toggleCurrentFavorite = () => {
 </template>
 
 <style scoped>
+/*
+ * 封面缩放只给支持悬停的设备。
+ * 触屏上 :hover 会一直保持，点一下封面就永久放大，要再点别处才恢复。
+ */
+.cover-img {
+  transition: transform 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cover-img:hover {
+    transform: scale(1.25);
+  }
+}
+
 .iconfont {
-  @apply text-xl text-[#ffffff] h-6 hover:scale-110 active:scale-50 duration-300 ease-in-out cursor-pointer mx-[0.4rem]
+  @apply text-xl text-[#ffffff] h-6 hover:scale-110 active:scale-90 duration-300 ease-in-out cursor-pointer mx-[0.4rem]
+}
+
+/*
+ * 触屏上按钮偏小，手指容易点空。
+ * 字号提到 1.45rem，高度撑到 2.5rem（40px 点击热区）；
+ * 图标间距同时收窄一点，保证一排 6 个不会挤出控制栏。
+ */
+@media (max-width: 767.98px) {
+  .iconfont {
+    font-size: 1.45rem;
+    height: 2.5rem;
+    line-height: 2.5rem;
+    margin-left: 0.38rem;
+    margin-right: 0.38rem;
+  }
 }
 
 /* 已收藏的爱心：红色实心，和未收藏的白色描边区分开 */

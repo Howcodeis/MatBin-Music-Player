@@ -36,8 +36,8 @@ let lastFailedUrl = ''
 // 切歌中标记，避免 ended 在高频 timeupdate 里被重复触发
 let switching = false
 /*
- * 后台加载的请求序号。原来用 ElLoading 全屏遮罩挡住连点，改成后台加载后没有遮罩，
- * 用户可能连续点好几首；每次切歌领取新序号，旧请求返回时直接丢弃，
+ * 后台加载的请求序号。
+ * 切歌没有全屏遮罩，用户可能连续点好几首；每次切歌领取新序号，旧请求返回时直接丢弃，
  * 避免旧歌覆盖新歌、或弹出「正在播放：上一首」这种错消息。
  */
 let loadSeq = 0
@@ -53,6 +53,17 @@ const MAX_AUTO_SKIP = 5
 // 单曲循环模式值
 const SINGLE_LOOP = PLAYMODEL[2]
 
+/*
+ * 本地日期键（YYYY-MM-DD）。
+ * dailySongs 会持久化到 localStorage，靠这个日期判断拿到的还是不是今天的数据。
+ */
+const todayKey = () => {
+  const d = new Date()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${day}`
+}
+
 export const musicStatus = defineStore('musicinfo', {
   // readAndWrite
   state: () => ({
@@ -65,6 +76,7 @@ export const musicStatus = defineStore('musicinfo', {
     favorite: [],// 收藏歌单
     recommendedPlayLists: [],// 推荐歌单（热门歌单页）
     dailySongs: [],// 每日推荐（发现音乐页）
+    dailySongsDate: '',// 上次成功获取日推的本地日期（YYYY-MM-DD），用于判断跨天
     playlistSongs: [],// 选中歌单的歌曲
     playlistInfo: {
       id: '', name: '', cover: '', creator: '', tags: [], trackCount: 0, playCount: 0, description: ''
@@ -744,10 +756,21 @@ export const musicStatus = defineStore('musicinfo', {
     async setDailySongs () {
       try {
         this.dailySongs = await getDailySongs()
+        // 记下这份推荐属于哪一天，第二天进来才能判断该不该重拉
+        this.dailySongsDate = todayKey()
       } catch (error) {
         this.dailySongs = []
         normalBack('warning', error.message)
       }
+    },
+    /*
+     * 日推是否需要重新拉取：
+     * 没数据，或者上次拿到的是「今天以前」的数据。
+     * 用日期比较而不是定时器 —— 用户关掉页面再打开也能正确刷新，
+     * 而且不需要在页面里挂一个跨夜的 setTimeout。
+     */
+    needRefreshDaily () {
+      return !this.dailySongs.length || this.dailySongsDate !== todayKey()
     },
     // 歌单详情：元信息 + 第一页歌曲
     async setPlaylistDetail (id) {

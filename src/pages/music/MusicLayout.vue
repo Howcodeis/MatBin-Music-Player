@@ -72,7 +72,7 @@ watch(() => route.fullPath, () => {
 
   <!-- 侧栏：宽屏常驻，窄屏为覆盖式抽屉 -->
   <aside ref="drawerRef" class="sider-panel" :class="{ 'sider-panel--drawer': isMobile }">
-    <!-- 收起按钮：原来只有展开没有关闭入口 -->
+    <!-- 侧栏收起按钮 -->
     <button v-if="isMobile" class="sider-close" title="收起菜单" aria-label="收起菜单" @click="closeSiderMenu">
       <i class="iconfont icon-xiangzuo"></i>
     </button>

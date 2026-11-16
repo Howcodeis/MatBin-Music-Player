@@ -51,8 +51,12 @@ const albumOf = row => row.album?.name || row.al?.name || '-'
 const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
 
 onMounted(async () => {
-  // 已有数据就不重复请求
-  if (dailySongs.value.length) {
+  /*
+   * 只有「今天还没拉过」才请求。
+   * dailySongs 会持久化到 localStorage，不能只判断有没有数据，
+   * 要按日期判断：不是今天的就重拉。
+   */
+  if (!store.needRefreshDaily()) {
     loading.value = false
     return
   }
@@ -69,17 +73,10 @@ onMounted(async () => {
         <h1 class="daily-title">每日推荐</h1>
         <p class="daily-sub">{{ today }} · 根据你的口味生成 · {{ dailySongs.length }} 首</p>
       </div>
-      <div>
-        <button class="daily-play" type="button" :disabled="!dailySongs.length" title="从第一首开始播放" @click="playAll">
-          <i class="iconfont icon-bofang"></i>
-          <span>播放全部</span>
-        </button>
-        <button class="daily-refresh" type="button" :disabled="!dailySongs.length" title="查收今日推荐"
-          @click="store.setDailySongs">
-          <i class="iconfont icon-liebiaoxunhuan"></i>
-          <span>查收今日推荐</span>
-        </button>
-      </div>
+      <button class="daily-play" type="button" :disabled="!dailySongs.length" title="从第一首开始播放" @click="playAll">
+        <i class="iconfont icon-bofang"></i>
+        <span>播放全部</span>
+      </button>
     </header>
 
     <!-- 歌曲列表 -->
@@ -182,27 +179,7 @@ onMounted(async () => {
   transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
 }
 
-.daily-refresh {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.3rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
-}
-
 .daily-play:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.daily-refresh:hover {
   background: rgba(255, 255, 255, 0.22);
   border-color: rgba(255, 255, 255, 0.4);
 }
@@ -213,10 +190,6 @@ onMounted(async () => {
 }
 
 .daily-play .iconfont {
-  font-size: 0.85rem;
-}
-
-.daily-refresh .iconfont {
   font-size: 0.85rem;
 }
 
@@ -276,11 +249,6 @@ onMounted(async () => {
   }
 
   .daily-play {
-    padding: 0.25rem 0.6rem;
-    font-size: 0.7rem;
-  }
-
-  .daily-refresh {
     padding: 0.25rem 0.6rem;
     font-size: 0.7rem;
   }

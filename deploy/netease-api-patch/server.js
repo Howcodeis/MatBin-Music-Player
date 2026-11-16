@@ -336,7 +336,7 @@ async function serveNcmApi(options) {
    * cPanel / LiteSpeed（LSAPI）会直接调用入口文件导出的 handler，
    * 应用自己再 listen 会抢端口，轻则请求路由不到、重则 EADDRINUSE 直接启动失败 ——
    * 表现就是 /api/* 一路 404。
-   * 本地 `node app.js` 时不传这个参数，行为与原来完全一致。
+   * 本地 `node app.js` 时不传这个参数，走正常的端口监听。
    */
   if (options.listen !== false) {
     const onListen = () => {

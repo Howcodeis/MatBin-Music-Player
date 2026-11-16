@@ -10,8 +10,47 @@ defineOptions({
 
 const store = musicStatus()
 
+/*
+ * 移动端软键盘弹出会让 window.innerHeight 变小，
+ * 面板高度按百分比重算，controls 被压扁后和进度条叠在一起。
+ *
+ * 判断依据用「输入框是否聚焦」而不是高度变化的幅度：
+ * 键盘高度和转屏变化在数值上有重叠，靠阈值分不开。
+ * 聚焦期间一律不跟随 innerHeight，失焦后再按真实尺寸重算。
+ */
+const HEIGHT_VAR = '--app-height'
+let inputFocused = false
+
+const applyAppHeight = (height) => {
+  document.documentElement.style.setProperty(HEIGHT_VAR, `${height}px`)
+}
+
+const syncViewportHeight = () => {
+  const height = window.innerHeight
+  if (!height) return
+  // 输入框聚焦时 innerHeight 的变化来自软键盘，忽略
+  if (inputFocused) return
+  applyAppHeight(height)
+}
+
+const isTextField = (el) =>
+  Boolean(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+
 onMounted(() => {
   store.initAudio()
+  syncViewportHeight()
+
+  window.addEventListener('resize', syncViewportHeight)
+  window.addEventListener('orientationchange', syncViewportHeight)
+
+  document.addEventListener('focusin', (event) => {
+    if (isTextField(event.target)) inputFocused = true
+  })
+  document.addEventListener('focusout', (event) => {
+    if (!isTextField(event.target)) return
+    inputFocused = false
+    syncViewportHeight()
+  })
 })
 
 // 记录每个元素上正在跑的补间，打断时能强制收尾
@@ -53,7 +92,8 @@ const onPageLeave = (el, done) => {
 
 <style scoped>
 .body {
-  height: 100vh;
+  /* --app-height 由 App.vue 写入，锁定软键盘弹出前的可视高度 */
+  height: var(--app-height, 100vh);
   background-size: cover;
   background-position: center;
   position: relative;

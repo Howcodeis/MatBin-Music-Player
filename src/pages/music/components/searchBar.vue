@@ -23,7 +23,7 @@ const { keyword: artistKeyword, resetArtistKeyword } = useArtistFilter()
 /*
  * 搜索框有两种模式，由当前路由决定：
  * - favorite 页：只做本地筛选，不发请求、不记搜索历史、不跳路由；
- * - 其他页：保持原来的网络搜索（回车 / 点按钮 → 请求接口 → 结果展示在列表页）。
+ * - 其他页：网络搜索（回车 / 点按钮 → 请求接口 → 结果展示在列表页）。
  */
 const isFavoriteMode = computed(() => route.name === 'favorite')
 // 歌手页同样是页内筛选：只在已加载的歌手热门里过滤，不发网络请求

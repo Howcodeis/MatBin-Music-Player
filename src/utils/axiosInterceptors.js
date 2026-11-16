@@ -10,10 +10,9 @@ import nProgress from 'nprogress'
 const HTTP_CONFIG = {
   baseURL: '/api/',
   /*
-   * 原来 10 秒。部署到共享主机后，Passenger 空闲会回收 Node 进程，
-   * 冷启动要重新加载几百个接口定义，首屏请求经常卡在 10 秒边缘。
-   * 放宽到 15 秒 + 超时自动重试一次（见下面的响应拦截），
-   * 重试通常能命中已经热起来的进程，比直接报错体验好得多。
+   * 共享主机上 Passenger 空闲会回收 Node 进程，冷启动要重新加载几百个接口定义，
+   * 首屏请求容易卡在超时边缘。这里给 15 秒，配合响应拦截里的超时重试，
+   * 重试通常能命中已经热起来的进程。
    */
   timeout: 15000,
   withCredentials: true,

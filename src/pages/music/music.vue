@@ -103,14 +103,16 @@ watch(musicCoverPath, (url) => {
       <!-- 列表和控件页面 -->
       <div class="w-full h-full">
         <!--列表展示以及侧栏部分-->
-        <div ref="listPage" v-show="!isShowAnimationLyrics" class=" absolute w-full h-[85%] flex">
+        <div ref="listPage" v-show="!isShowAnimationLyrics"
+          class=" absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] flex">
           <!-- 音乐列表以及搜索 -->
           <div class="relative w-full h-full flex">
             <MusicLayout />
           </div>
         </div>
         <!-- 主奏页面 -->
-        <div ref="soloItem" v-if="isShowAnimationLyrics" class="box-border absolute w-full h-[85%] z-10">
+        <div ref="soloItem" v-if="isShowAnimationLyrics"
+          class="box-border absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] z-10">
           <!-- 切换按钮 -->
           <div @click="toggleLyricBoard"
             class='absolute top-2 left-2 w-9 h-9 text-center z-10 text-[#99CCFF] leading-8 hover:translate-y-2 duration-200'>
@@ -123,7 +125,7 @@ watch(musicCoverPath, (url) => {
           <soloPage></soloPage>
         </div>
         <!--控件部分-->
-        <div class="absolute w-full h-[15%] border-gradient text-[#000000] bottom-0 z-20">
+        <div class="absolute w-full h-[15%] max-md:h-[104px] border-gradient text-[#000000] bottom-0 z-20">
           <!-- 控键 -->
           <div class="relative bottom-0 flex w-full h-full select-none ">
             <controls :toggleLyricBoard="toggleLyricBoard" />

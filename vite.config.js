@@ -196,8 +196,7 @@ const neteaseApiPlugin = () => ({
 
 /*
  * /api 代理：dev 与 preview 共用同一份配置。
- * 之前只配了 server.proxy，结果 `npm run preview` 打开构建产物时所有接口 404，
- * 没法在本地验证「打包之后到底还能不能听歌」。上线前请务必用 preview 验一遍。
+ * 这样 `npm run preview` 打开构建产物时接口也能通，上线前可以直接在本地验证打包结果。
  */
 const apiProxy = {
   '/api/': {

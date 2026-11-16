@@ -48,7 +48,7 @@ const renderLyric = async () => {
   currentTWord.value = nextTWord
   await nextTick()
 
-  // 上一句立即淡出（原来要等到下一句的时刻才出场，那时索引已变、时间线被 clear）
+  // 上一句立即淡出：等下一句时刻再出场的话，索引已变、时间线被 clear，动画播不完
   lyricLeave(prevLyricItem.value)
   lyricEnter(lyricItem.value, calculateTimeUntilNextLyric())
 }
