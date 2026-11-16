@@ -335,7 +335,19 @@ const toggleCurrentFavorite = () => {
 }
 
 .iconfont {
-  @apply text-xl text-[#ffffff] h-6 hover:scale-110 active:scale-90 duration-300 ease-in-out cursor-pointer mx-[0.4rem]
+  @apply text-xl text-[#ffffff] h-6 active:scale-90 duration-300 ease-in-out cursor-pointer mx-[0.4rem]
+}
+
+/*
+ * 悬停放大与变蓝只给桌面。
+ * 写在 @apply 变体里时不会被 hoverOnlyWhenSupported 包裹，
+ * 触屏点完会一直保持，把收藏状态的颜色盖住。
+ */
+@media (hover: hover) and (pointer: fine) {
+  .iconfont:hover {
+    transform: scale(1.1);
+    color: #0099ff;
+  }
 }
 
 /*

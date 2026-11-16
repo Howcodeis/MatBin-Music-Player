@@ -280,9 +280,13 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
-.favorite-icon:hover {
-  color: #ff6b81;
-  transform: scale(1.15);
+/* 只在悬停设备上变色放大：触屏点完 :hover 会一直保持，
+   把「已取消收藏」的状态色盖住，看起来像没反应 */
+@media (hover: hover) and (pointer: fine) {
+  .favorite-icon:hover {
+    color: #ff6b81;
+    transform: scale(1.15);
+  }
 }
 
 .favorite-icon.is-favorite {
