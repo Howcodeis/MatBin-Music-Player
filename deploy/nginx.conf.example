@@ -1,0 +1,109 @@
+# ------------------------------------------------------------------
+# 网易云音乐播放器 · Nginx 站点配置模板
+#
+# 用法：
+#   1. 复制到 /etc/nginx/conf.d/music.conf
+#   2. 改 server_name / root / 证书路径这三处
+#   3. nginx -t && nginx -s reload
+#
+# 前提：
+#   - 前端构建产物已上传到 /var/www/music（dist 里的内容）
+#   - Node API 已用 pm2 跑在 127.0.0.1:3000，且 3000 端口不对外开放
+# ------------------------------------------------------------------
+
+# 限流：按客户端 IP 计。10 请求/秒，允许 20 个突发。
+# 公开站点必须加，否则别人可以直接拿你的 /api 当免费接口刷。
+limit_req_zone  $binary_remote_addr zone=music_api:10m  rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=music_conn:10m;
+
+# HTTP 一律跳 HTTPS
+server {
+    listen      80;
+    listen      [::]:80;
+    server_name music.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    # 新版 Nginx（1.25.1+）可改成 listen 443 ssl; + http2 on;
+    listen      443 ssl http2;
+    listen      [::]:443 ssl http2;
+    server_name music.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/music.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/music.example.com/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    root  /var/www/music;
+    index index.html;
+
+    # 只有文本类资源值得压缩，音频/图片不要开
+    gzip             on;
+    gzip_min_length  1024;
+    gzip_comp_level  5;
+    gzip_types       text/css application/javascript application/json image/svg+xml;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # ---------------- 前端静态资源 ----------------
+    location / {
+        # history 路由：刷新 /music/playList、/music/artist/123 这类路径时，
+        # 磁盘上并没有对应文件，必须回落到 index.html 交给前端路由处理，否则 404
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 入口 HTML 绝不能长缓存，否则发版后用户还在看旧页面
+    location = /index.html {
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
+
+    # 带 contenthash 的产物可以缓存一年
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # ---------------- 接口反向代理 ----------------
+    location /api/ {
+        limit_req  zone=music_api burst=20 nodelay;
+        limit_conn music_conn 10;
+
+        # 末尾的 "/" 很关键：表示把 /api/ 前缀剥掉再转发，
+        # 等价于 vite.config.js 里的 rewrite。少写这个斜杠会导致所有接口 404。
+        proxy_pass http://127.0.0.1:3000/;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 搜索/推荐偶尔会慢，超时给足；连接超时要短，避免占着 worker
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    30s;
+
+        # 接口数据随时变，不做缓存
+        add_header Cache-Control "no-store";
+    }
+
+    access_log /var/log/nginx/music.access.log;
+    error_log  /var/log/nginx/music.error.log warn;
+}
+
+# ------------------------------------------------------------------
+# 可选加固（按需打开）
+#
+# 1. 只给自己用 —— 加访问口令：
+#      sudo apt install apache2-utils
+#      htpasswd -c /etc/nginx/.htpasswd yourname
+#    然后在 server 块里加两行：
+#      auth_basic           "restricted";
+#      auth_basic_user_file /etc/nginx/.htpasswd;
+#
+# 2. 限制只有自己的域名能调接口：
+#    Referer 校验只能挡住随手 curl，伪造 Referer 一样能绕过，
+#    真正的防线是上面的 limit_req，别把 Referer 当安全边界。
+# ------------------------------------------------------------------

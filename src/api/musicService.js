@@ -8,6 +8,7 @@
  */
 import { reqMusicList, reqSongDetail, reqSongDetailBatch, reqSongLyric, reqSongUrl, reqSongComment, reqPersonalizedPlaylists, reqRecommendSongs, reqPlaylistInfo, reqPlayListDetail, reqArtistSongs } from "./reqMusic";
 import { parseLrc } from "@/utils/lyric";
+import { toHttps } from "@/utils/music";
 
 /**
  * @Description: 获取音乐路径
@@ -23,7 +24,14 @@ export const getSongUrl = async (id) => {
   // 否则会被当成接口异常，列表里一遇灰色歌曲就停在原地。
   const song = res?.data?.[0]
   if (!song?.url) return null
-  return song
+  /*
+   * 网易云返回的播放地址经常是 http://m702.music.126.net/...。
+   * 本地开发页面是 http，没问题；但站点一旦部署到 https，
+   * 浏览器会按「混合内容」直接拦掉这个音频请求 —— 表现就是歌点了不响、控制台报
+   * Mixed Content。同一路径 https 可正常访问，所以这里统一升级，
+   * 让开发环境和线上环境行为一致。
+   */
+  return { ...song, url: toHttps(song.url) }
 }
 
 /**
