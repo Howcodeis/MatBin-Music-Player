@@ -26,3 +26,6 @@ dist-ssr
 # 本地源码备份（修复前快照）
 backup/
 _backup/
+
+# 部署时生成的压缩包（体积大，不入库）
+deploy/upload/

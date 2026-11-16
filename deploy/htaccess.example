@@ -1,0 +1,47 @@
+# ------------------------------------------------------------------
+# 前端静态站配置
+#
+# 放置位置：public_html/.htaccess
+#
+# 作用：
+#   1. SPA 路由回退 —— 刷新 /music/playList、/music/artist/123 时不 404
+#   2. 保护 /api 不被重写到 index.html（Node 应用要靠它接管）
+#   3. 静态资源分级缓存
+#
+# 注意：cPanel 创建 Node.js App 后会往同一个文件追加一段
+#   "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN ... END"
+# 那一段是 Passenger 的接管配置，不要删，也不要包进下面的 IfModule 里。
+# ------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # /api 及以下路径交给 Node 应用处理，必须原样放行。
+  # 漏了这条，下面的兜底规则会把接口请求重写成 index.html，
+  # 表现就是所有接口都返回一段 HTML，前端报 JSON 解析错误。
+  RewriteRule ^api($|/) - [L,NC]
+
+  # 真实存在的文件或目录直接返回（js / css / 图片 / 字体）
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 其余全部交给前端路由
+  RewriteRule . /index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # 入口 HTML 不缓存，避免发版后用户还看到旧页面
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Vite 产物文件名带 contenthash，可以长缓存
+  <FilesMatch "\.(js|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# 关闭目录列表，避免别人直接浏览目录结构
+Options -Indexes
