@@ -3,7 +3,7 @@
 > 一个基于 Vue 3 的网易云音乐 Web 播放器。界面克制、内容密度高，重点放在「找歌 → 听歌 → 看歌词」这条主链路的顺滑度上。
 >
 > 数据来自 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)，项目本身不含后端；目前为个人开发 / 练习阶段，仅用于学习交流。
->
+> 项目地址：https://131202914.xyz
 
 ---
 
