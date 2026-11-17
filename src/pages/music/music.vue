@@ -66,23 +66,31 @@ const musicCoverPath = computed(() => {
 
 /*
  * 背景交叉淡变：
- * 先预加载新封面，等图片真正解码完再替换 displayCover，
- * 配合模板里的 <Transition> 做透明度过渡。这样淡入过程中不会出现空白/闪白。
- * coverSeq 用于快速连续切歌时丢弃过期的预加载结果。
+ * 先预加载新封面，等图片解码完再替换 displayCover，配合 <Transition> 做透明度过渡，
+ * 淡入过程中不会空白或闪白。coverSeq 用来在快速切歌时丢掉过期的预加载结果。
+ *
+ * 背景只是模糊色块，取 100x100 的缩略图就够：小图放大本身就糊，
+ * 后面那层 blur 的计算量能从百万像素级降到几千像素，拖动进度条时不会出现块状伪影。
  */
-const displayCover = ref(musicCoverPath.value)
+const toThumb = (url) => {
+  if (!url || !/^https?:/i.test(url) || url.includes('param=')) return url
+  return `${url}${url.includes('?') ? '&' : '?'}param=100y100`
+}
+
+const displayCover = ref(toThumb(musicCoverPath.value))
 let coverSeq = 0
 watch(musicCoverPath, (url) => {
   if (!url || url === displayCover.value) return
   const seq = ++coverSeq
+  const thumb = toThumb(url)
   const preload = new Image()
   preload.onload = () => {
-    if (seq === coverSeq) displayCover.value = url
+    if (seq === coverSeq) displayCover.value = thumb
   }
   preload.onerror = () => {
     if (seq === coverSeq) displayCover.value = defaultCover
   }
-  preload.src = url
+  preload.src = thumb
 })
 
 
@@ -95,9 +103,10 @@ watch(musicCoverPath, (url) => {
     <!-- 音乐展示界面 不包括空白-->
     <div
       class="box-border border bg-black/50 rounded-3xl absolute min-h-[660px] duration-200 overflow-hidden w-[70%] h-2/3 flex max-md:min-h-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[80%] max-w-[1000px]">
-      <!--背景封面：切歌时新旧两张图交叉淡变。-->
+      <!--背景封面：切歌时新旧两张图交叉淡变。scale-105 让 blur 的虚边落到裁剪线外，不会在边上露底色。-->
       <Transition name="bg-fade">
-        <img :key="displayCover" class="absolute inset-0 w-full h-full object-cover scale-125 brightness-50 blur-md"
+        <img :key="displayCover"
+          class="absolute inset-0 w-full h-full object-cover object-center brightness-50 blur-md transform-gpu scale-105"
           :src="displayCover" alt="">
       </Transition>
       <!-- 列表和控件页面 -->
@@ -118,8 +127,7 @@ watch(musicCoverPath, (url) => {
             class='absolute top-2 left-2 w-9 h-9 text-center z-10 text-white leading-8 hover:translate-y-2 duration-200'>
             <i class="iconfont icon-xiangxiajiantou" />
           </div>
-          <div @click="$router.push('/')"
-            class="absolute top-2 right-2 w-9 h-9 text-center z-10 text-white leading-8">
+          <div @click="$router.push('/')" class="absolute top-2 right-2 w-9 h-9 text-center z-10 text-white leading-8">
             <i class="iconfont icon-home" />
           </div>
           <soloPage></soloPage>
@@ -152,14 +160,14 @@ watch(musicCoverPath, (url) => {
 
 /*
  * 切歌背景交叉淡变。
- * 新图淡入 0.7s、旧图淡出 1.1s 避免新图还没完全淡入就被旧图盖住。
+ * 两张图同时存在时是叠加状态，旧图拖太久会让人以为背景没切干净，所以两边都压短。
  */
 .bg-fade-enter-active {
-  transition: opacity 0.7s ease;
+  transition: opacity 1s ease;
 }
 
 .bg-fade-leave-active {
-  transition: opacity 1.1s ease;
+  transition: opacity 1.5s ease;
 }
 
 .bg-fade-enter-from,

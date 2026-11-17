@@ -726,6 +726,7 @@ const cyclePlayMode = () => {
   z-index: 30;
   /* 数字等宽，拖动时不会因字形变化而左右抖动 */
   font-variant-numeric: tabular-nums;
+  will-change: auto;
 }
 
 .drag-time__current {

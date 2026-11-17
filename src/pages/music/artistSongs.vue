@@ -157,7 +157,7 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
 
 <style scoped>
 .text-style {
-  @apply text-ellipsis overflow-hidden whitespace-nowrap
+  @apply text-ellipsis overflow-hidden whitespace-nowrap cursor-pointer
 }
 
 ::v-deep(.el-table__body .el-table__row.hover-row td) {

@@ -133,7 +133,7 @@ onMounted(async () => {
 
 <style scoped>
 .text-style {
-  @apply text-ellipsis overflow-hidden whitespace-nowrap
+  @apply text-ellipsis overflow-hidden whitespace-nowrap cursor-pointer
 }
 
 ::v-deep(.el-table__body .el-table__row.hover-row td) {

@@ -206,11 +206,11 @@ onMounted(async () => {
   gap: 0.15rem;
   padding: 0.1rem 0.38rem;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.45);
+  /* 用不透明度更高的纯色代替 backdrop-filter：卡片一多，每张都在实时采样背后像素，滚动会明显掉帧 */
+  background: rgba(0, 0, 0, 0.62);
   color: #ffffff;
   font-size: 0.62rem;
   font-variant-numeric: tabular-nums;
-  backdrop-filter: blur(4px);
 }
 
 .hot-count .iconfont {
