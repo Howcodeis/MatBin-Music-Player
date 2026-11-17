@@ -16,6 +16,37 @@ const HotPlayList = () => import('../pages/music/hotPlayList.vue')
 const ArtistSongs = () => import('../pages/music/artistSongs.vue')
 const PlaylistDetail = () => import('../pages/music/playlistDetail.vue')
 
+/*
+ * 音乐区落地页记忆。
+ *
+ * 第一次进 /music 走每日推荐；之后回到上次离开时停留的那一页。
+ * 存 localStorage 而不是 pinia：路由模块不该反向依赖 store，避免循环引用；
+ * 而且这个状态跟着设备走，刷新、重开浏览器都该保留。
+ */
+const LAST_MUSIC_PATH_KEY = 'music-player:last-music-path'
+const FIRST_VISIT_PATH = '/music/foundMusic'
+
+const isMusicPath = (path) => path === '/music' || path.startsWith('/music/')
+
+const readLastMusicPath = () => {
+  try {
+    const saved = window.localStorage.getItem(LAST_MUSIC_PATH_KEY)
+    // 只认 /music/ 开头的值，脏数据不至于把用户带到别的路由
+    if (saved && saved.startsWith('/music/')) return saved
+  } catch (error) {
+    // 隐私模式下 localStorage 会抛错，当成首次访问处理
+  }
+  return FIRST_VISIT_PATH
+}
+
+const rememberMusicPath = (path) => {
+  try {
+    window.localStorage.setItem(LAST_MUSIC_PATH_KEY, path)
+  } catch (error) {
+    // 存不进去就退回默认页，不影响使用
+  }
+}
+
 const routes = [
   {
     path: '/',
@@ -28,7 +59,7 @@ const routes = [
   {
     path: '/music',
     name: 'music',
-    redirect: "/music/foundMusic",
+    redirect: () => readLastMusicPath(),
     meta: {
       menu: '音乐'
     },
@@ -97,6 +128,12 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+// 路由守卫：离开音乐区时记忆当前页，回到音乐区时恢复
+router.afterEach((to, from) => {
+  if (!isMusicPath(from.path) || from.name === 'music') return
+  if (isMusicPath(to.path)) return
+  rememberMusicPath(from.fullPath)
 })
 
 export default router

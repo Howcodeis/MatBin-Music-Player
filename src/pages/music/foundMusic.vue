@@ -22,7 +22,7 @@ defineOptions({
 const store = musicStatus()
 const isMobile = useIsMobile()
 const { dailySongs, playType } = storeToRefs(store)
-const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
+const { headerCellStyle, headerRowStyle, rowStyle, cellStyle, rowClassName, markFavoriteClick, isJustFavorite } = useTableStyle()
 // 区分还在加载和加载完但没数据，接口失败时不会一直显示加载中
 const loading = ref(true)
 
@@ -33,6 +33,8 @@ const today = computed(() => {
 })
 
 const playChoose = (row) => {
+  // 刚点过收藏就不算选中歌曲
+  if (isJustFavorite()) return
   playType.value = PLAYTYPE.DAILY
   store.setMusicInfo(row)
 }
@@ -45,7 +47,10 @@ const playAll = () => {
 }
 
 const isFavorite = id => store.isFavorite(id)
-const toggleFavorite = row => store.toggleFavorite(row)
+const toggleFavorite = row => {
+  markFavoriteClick()
+  store.toggleFavorite(row)
+}
 
 const albumOf = row => row.album?.name || row.al?.name || '-'
 const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
@@ -87,7 +92,7 @@ onMounted(async () => {
       <el-table v-else :data="dailySongs" row-key="id" :size="isMobile ? 'small' : 'default'"
         :style="{ width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0)' }" @row-click="playChoose"
         :header-cell-style="headerCellStyle" :header-row-style="headerRowStyle" :row-style="rowStyle"
-        :cell-style="cellStyle">
+        :cell-style="cellStyle" :row-class-name="rowClassName">
         <el-table-column fixed :width="isMobile ? 38 : 60" label="#">
           <template #default="scope">
             <div class="index-num text-gray-200 select-none">

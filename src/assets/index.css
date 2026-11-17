@@ -17,3 +17,12 @@ body {
 ::-webkit-scrollbar{
   width: 0;
 }
+/* 正在播放的那一行：加底色，序号和歌名提亮 */
+.el-table__body tr.is-playing-row > td.el-table__cell {
+  background-color: rgba(0, 153, 255, 0.16) !important;
+}
+
+.el-table__body tr.is-playing-row .index-num,
+.el-table__body tr.is-playing-row .song-name {
+  color: #6ec1ff;
+}

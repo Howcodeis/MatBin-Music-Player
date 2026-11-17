@@ -15,18 +15,21 @@ defineOptions({
 
 const isMobile = useIsMobile()
 const { favorite, playType } = storeToRefs(musicStatus())
-const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
+const { headerCellStyle, headerRowStyle, rowStyle, cellStyle, rowClassName, markFavoriteClick, isJustFavorite } = useTableStyle()
 // 表格数据用过滤后的收藏，关键词来自顶部搜索框（和 searchBar 共用同一个 ref）
 const { keyword: favoriteKeyword, filteredFavorite } = useFavoriteFilter()
 
 // 双击播放：切到我喜欢作为当前播放列表，上下首就在收藏里轮转
 const playChoose = (row) => {
+  // 刚点过收藏就不算选中歌曲
+  if (isJustFavorite()) return
   playType.value = PLAYTYPE.FAVORITE
   musicStatus().setMusicInfo(row)
 }
 
 // 再点一次爱心即取消收藏，行会从列表里消失
 const toggleFavorite = (row) => {
+  markFavoriteClick()
   musicStatus().toggleFavorite(row)
 }
 
@@ -58,7 +61,7 @@ onMounted(() => {
     <el-table v-else :data="filteredFavorite" row-key="id" :size="isMobile ? 'small' : 'default'"
       :style="{ width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0)' }" @row-click="playChoose"
       :header-cell-style="headerCellStyle" :header-row-style="headerRowStyle" :row-style="rowStyle"
-      :cell-style="cellStyle">
+      :cell-style="cellStyle" :row-class-name="rowClassName">
       <el-table-column fixed :width="isMobile ? 38 : 60" label="#">
         <template #default="scope">
           <div class="index-num text-gray-200 select-none">

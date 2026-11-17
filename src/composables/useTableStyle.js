@@ -4,9 +4,12 @@
  * @Description: 歌曲表格的公共样式与触底加载
  */
 import { ref } from 'vue'
+import { musicStatus } from '@/store'
 
 // el-table 透明背景样式
 export function useTableStyle () {
+  const store = musicStatus()
+
   const headerRowStyle = () => ({
     backgroundColor: 'rgba(0, 0, 0, 0)',
     color: 'white'
@@ -23,7 +26,27 @@ export function useTableStyle () {
   const cellStyle = () => ({
     border: 'none'
   })
-  return { headerRowStyle, headerCellStyle, rowStyle, cellStyle }
+
+  // 正在播放的那一行标出来，切走再回来也能找到位置
+  const rowClassName = ({ row }) => (row?.id === store.currentMusicInfo?.id ? 'is-playing-row' : '')
+
+  /*
+   * 手机上点收藏，点击有时候会冒泡到整行，误触发播放。
+   * 记一下最近点收藏的时间，行点击时跳过紧接着的那一次。
+   */
+  let favoriteAt = 0
+  const markFavoriteClick = () => { favoriteAt = Date.now() }
+  const isJustFavorite = () => Date.now() - favoriteAt < 300
+
+  return {
+    headerRowStyle,
+    headerCellStyle,
+    rowStyle,
+    cellStyle,
+    rowClassName,
+    markFavoriteClick,
+    isJustFavorite
+  }
 }
 
 /**

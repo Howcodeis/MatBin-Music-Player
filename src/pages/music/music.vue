@@ -94,11 +94,11 @@ watch(musicCoverPath, (url) => {
     class="flex box-border will-change-scroll absolute w-full h-full min-h-[40rem] justify-center items-center max-md:min-h-0 max-md:items-end">
     <!-- 音乐展示界面 不包括空白-->
     <div
-      class="box-border border rounded-3xl absolute min-h-[660px] duration-200 overflow-hidden w-[70%] h-2/3 flex max-md:min-h-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[80%] max-w-[1000px] bg-black/50">
-      <!-- 背景封面：切歌时新旧两张图交叉淡变 -->
+      class="box-border border bg-black/50 rounded-3xl absolute min-h-[660px] duration-200 overflow-hidden w-[70%] h-2/3 flex max-md:min-h-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[80%] max-w-[1000px]">
+      <!--背景封面：切歌时新旧两张图交叉淡变。-->
       <Transition name="bg-fade">
-        <img :key="displayCover" class="absolute w-full h-full scale-[1.5] brightness-50 blur-md" :src="displayCover"
-          alt="">
+        <img :key="displayCover" class="absolute inset-0 w-full h-full object-cover scale-125 brightness-50 blur-md"
+          :src="displayCover" alt="">
       </Transition>
       <!-- 列表和控件页面 -->
       <div class="w-full h-full">
@@ -115,11 +115,11 @@ watch(musicCoverPath, (url) => {
           class="box-border absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] z-10">
           <!-- 切换按钮 -->
           <div @click="toggleLyricBoard"
-            class='absolute top-2 left-2 w-9 h-9 text-center z-10 text-[#99CCFF] leading-8 hover:translate-y-2 duration-200'>
+            class='absolute top-2 left-2 w-9 h-9 text-center z-10 text-white leading-8 hover:translate-y-2 duration-200'>
             <i class="iconfont icon-xiangxiajiantou" />
           </div>
           <div @click="$router.push('/')"
-            class="absolute top-2 right-2 w-9 h-9 text-center z-10 text-[#99CCFF] leading-8 hover:translate-y-2 duration-200">
+            class="absolute top-2 right-2 w-9 h-9 text-center z-10 text-white leading-8">
             <i class="iconfont icon-home" />
           </div>
           <soloPage></soloPage>
@@ -139,7 +139,7 @@ watch(musicCoverPath, (url) => {
 
 <style scoped>
 .iconfont {
-  @apply text-3xl cursor-pointer hover:text-[#0099FF] select-none
+  @apply text-3xl cursor-pointer hover:text-[#0099FF] select-none duration-200;
 }
 
 .border-gradient {
@@ -152,8 +152,7 @@ watch(musicCoverPath, (url) => {
 
 /*
  * 切歌背景交叉淡变。
- * 新图淡入 0.7s、旧图淡出 1.1s：旧图更慢地退场，垫在下面，
- * 两张同时半透明时也不会透出底色。
+ * 新图淡入 0.7s、旧图淡出 1.1s 避免新图还没完全淡入就被旧图盖住。
  */
 .bg-fade-enter-active {
   transition: opacity 0.7s ease;

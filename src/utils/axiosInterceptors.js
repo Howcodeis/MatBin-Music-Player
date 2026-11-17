@@ -9,11 +9,6 @@ import nProgress from 'nprogress'
 
 const HTTP_CONFIG = {
   baseURL: '/api/',
-  /*
-   * 共享主机上 Passenger 空闲会回收 Node 进程，冷启动要重新加载几百个接口定义，
-   * 首屏请求容易卡在超时边缘。这里给 15 秒，配合响应拦截里的超时重试，
-   * 重试通常能命中已经热起来的进程。
-   */
   timeout: 15000,
   withCredentials: true,
   headers: {
@@ -47,12 +42,6 @@ const handleResponseError = async (error) => {
 
   /*
    * 超时自动重试一次。
-   * 共享主机上最常见的超时不是接口挂了，而是 Passenger 冷启动：
-   * 进程被回收后，第一次请求要等 Node 重新把应用拉起来，几秒就过去了。
-   * 这种情况下重试一次基本能命中已经热好的进程。
-   *
-   * 限制条件：只重试 GET、每条请求最多一次，避免把压力放大。
-   * （本项目所有接口都是 GET，所以实际就是"一次超时 = 一次重试"）
    */
   const config = error.config
   const isTimeout = error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')

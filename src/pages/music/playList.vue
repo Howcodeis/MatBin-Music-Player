@@ -15,7 +15,7 @@ defineOptions({
 // 窄屏收起专辑列，把宽度让给歌曲名
 const isMobile = useIsMobile()
 
-const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
+const { headerCellStyle, headerRowStyle, rowStyle, cellStyle, rowClassName, markFavoriteClick, isJustFavorite } = useTableStyle()
 
 const store = musicStatus()
 // el-table 实例：用来把内部滚动条复位（表格是固定高度，滚动发生在表格内部）
@@ -24,6 +24,8 @@ const tableRef = ref(null)
 // 双击播放
 const { getPlayList, playType } = storeToRefs(store)
 const playChoose = (row) => {
+  // 刚点过收藏就不算选中歌曲
+  if (isJustFavorite()) return
   // 切换歌曲前更换播放类型 搜索类型
   playType.value = PLAYTYPE.SEARCH
   musicStatus().setMusicInfo(row)
@@ -39,7 +41,10 @@ const { handleLoadMore } = useLoadMore(async () => {
 
 // 收藏：爱心在序号右侧，点击只切换收藏，不触发播放
 const isFavorite = id => musicStatus().isFavorite(id)
-const toggleFavorite = row => musicStatus().toggleFavorite(row)
+const toggleFavorite = row => {
+  markFavoriteClick()
+  musicStatus().toggleFavorite(row)
+}
 
 // 持久化下来的旧搜索列表可能没有封面，进页面时批量补一次
 onMounted(() => {
@@ -63,7 +68,7 @@ watch(() => store.searchVersion, async () => {
       :size="isMobile ? 'small' : 'default'"
       :style="{ width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0)' }" @row-click="playChoose"
       :header-cell-style="headerCellStyle" :header-row-style="headerRowStyle" :row-style="rowStyle"
-      :cell-style="cellStyle">
+      :cell-style="cellStyle" :row-class-name="rowClassName">
       <el-table-column fixed :width="isMobile ? 38 : 60" label="#">
         <template #default="scope">
           <div class="index-num text-gray-200 select-none">

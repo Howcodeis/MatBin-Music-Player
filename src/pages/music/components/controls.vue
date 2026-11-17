@@ -221,18 +221,40 @@ const toggleCurrentFavorite = () => {
   if (!currentMusic.value?.id) return normalBack('info', '还没有正在播放的歌曲')
   musicStatus().toggleFavorite(currentMusic.value)
 }
+
+/*
+ * 计算播放模式图标
+ */
+const playModeIcon = computed(() => {
+  if (playMode.value === PLAYMODEL[0]) return 'icon-liebiaoxunhuan'
+  if (playMode.value === PLAYMODEL[2]) return 'icon-danquxunhuan'
+  return 'icon-suijibofang'
+})
+
+const playModeTitle = computed(() => {
+  if (playMode.value === PLAYMODEL[0]) return '列表循环'
+  if (playMode.value === PLAYMODEL[2]) return '单曲循环'
+  return '随机播放'
+})
+
+// 列表循环 → 单曲循环 → 随机 → 列表循环
+const cyclePlayMode = () => {
+  if (playMode.value === PLAYMODEL[0]) playMode.value = PLAYMODEL[2]
+  else if (playMode.value === PLAYMODEL[2]) playMode.value = PLAYMODEL[1]
+  else playMode.value = PLAYMODEL[0]
+}
 </script>
 
 <template>
   <!-- 歌曲图片信息 -->
-  <div class="flex justify-evenly items-center max-md:w-[40%] w-[30%]">
+  <div class="flex justify-evenly items-center w-[40%] max-md:w-[20%]">
     <!-- 图片 -->
     <div class="relative overflow-hidden left-1 rounded-2xl border-[1px] border-gray-500 w-[4rem] h-[4rem]"
       @click="toggleLyricBoard">
       <img class="cover-img object-cover cursor-pointer w-full h-auto" :src="smallMusicCover" alt="歌曲封面">
     </div>
-    <!-- 歌曲歌手 -->
-    <div class="relative w-[55%] max-md:left-[8px] left-1 max-md:text-[0.8rem] text-[#ffffff]">
+    <!-- 歌曲名，歌手艺人名 在移动端上不显示 -->
+    <div class="relative w-[55%] left-1 text-white max-md:hidden">
       <div class="text-ellipsis whitespace-nowrap overflow-x-hidden" :title="currentMusicInfo.name">
         <span>{{ currentMusicInfo.name || '暂无歌曲' }}</span>
       </div>
@@ -241,6 +263,7 @@ const toggleCurrentFavorite = () => {
       </div>
     </div>
   </div>
+  <!-- 进度条 -->
   <div id="audioSchedule" class="absolute w-full overflow-visible flex items-center"
     @pointerdown.capture="onProgressPointerDown" @mouseenter="handleProgressEnter" @mouseleave="handleProgressLeave">
     <!-- 拖动 / 桌面端悬浮时，跟随进度显示当前时间与总时长 -->
@@ -255,23 +278,43 @@ const toggleCurrentFavorite = () => {
       size="small" :show-tooltip="false" @input="onProgressInput" @change="onProgressChange" />
   </div>
   <!-- 控制栏 -->
-  <div ref="controlBarRef" class="flex justify-around flex-col w-[60%] min-w-[60%]">
+  <div ref="controlBarRef" class="flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%]">
     <!-- 播放顺序 / 音量 / 播放列表 -->
     <div class="flex justify-center">
       <div class="flex items-center relative">
-        <!-- 收藏当前歌曲：放在播放模式左边 -->
-        <i class="iconfont" :class="isCurrentFavorite ? 'icon-aixin1-copy is-favorite' : 'icon-aixin'"
-          :title="isCurrentFavorite ? '取消喜欢' : '加入我喜欢的音乐'" @click="toggleCurrentFavorite"></i>
-        <i class="iconfont icon-suijibofang" v-show="playMode == PLAYMODEL[1]" @click="playMode = PLAYMODEL[0]"
-          title="随机播放"> </i>
-        <i class="iconfont icon-danquxunhuan" v-show="playMode == PLAYMODEL[2]" @click="playMode = PLAYMODEL[1]"
-          title="单曲循环"> </i>
-        <i class="iconfont icon-liebiaoxunhuan" v-show="playMode == PLAYMODEL[0]" @click="playMode = PLAYMODEL[2]"
-          title="列表循环"> </i>
-        <i class="iconfont icon-zuobofang" @click="musicStatus().playNext()" title="上一首"> </i>
-        <i class="iconfont icon-zanting" @click="musicStatus().togglePlay()" v-show="getIsplay" title="暂停"></i>
-        <i class="iconfont icon-bofang" @click="musicStatus().togglePlay()" v-show="!getIsplay" title="播放"></i>
-        <i class="iconfont icon-youbofang" @click="musicStatus().playNext(true)" title="下一首"> </i>
+        <!-- 收藏当前歌曲 -->
+        <button class="ctl-btn" type="button" :title="isCurrentFavorite ? '取消喜欢' : '加入我喜欢的音乐'"
+          @click="toggleCurrentFavorite">
+          <Transition name="icon-swap" mode="out-in">
+            <i :key="isCurrentFavorite ? 'fav' : 'unfav'" class="iconfont"
+              :class="isCurrentFavorite ? 'icon-aixin1-copy is-favorite' : 'icon-aixin'"></i>
+          </Transition>
+        </button>
+
+        <!-- 播放模式：列表循环 / 单曲循环 / 随机 -->
+        <button class="ctl-btn" type="button" :title="playModeTitle" @click="cyclePlayMode">
+          <Transition name="icon-swap" mode="out-in">
+            <i :key="playMode" class="iconfont" :class="playModeIcon"></i>
+          </Transition>
+        </button>
+
+        <!-- 上一首 -->
+        <button class="ctl-btn" type="button" title="上一首" @click="musicStatus().playNext()">
+          <i class="iconfont icon-zuobofang"></i>
+        </button>
+
+        <!-- 播放 / 暂停 -->
+        <button class="ctl-btn" type="button" :title="getIsplay ? '暂停' : '播放'" @click="musicStatus().togglePlay()">
+          <Transition name="icon-swap" mode="out-in">
+            <i :key="getIsplay ? 'pause' : 'play'" class="iconfont"
+              :class="getIsplay ? 'icon-zanting' : 'icon-bofang'"></i>
+          </Transition>
+        </button>
+
+        <!-- 下一首 -->
+        <button class="ctl-btn" type="button" title="下一首" @click="musicStatus().playNext(true)">
+          <i class="iconfont icon-youbofang"></i>
+        </button>
       </div>
 
       <!-- 音量：圆形旋钮，点在图标上方弹出；窄屏隐藏，手机用系统音量键 -->
@@ -335,33 +378,90 @@ const toggleCurrentFavorite = () => {
 }
 
 .iconfont {
-  @apply text-xl text-[#ffffff] h-6 active:scale-90 duration-300 ease-in-out cursor-pointer mx-[0.4rem]
+  @apply text-[#ffffff] cursor-pointer text-2xl;
+  transition: transform 0.16s ease, color 0.16s ease;
 }
 
-/*
- * 悬停放大与变蓝只给桌面。
- * 写在 @apply 变体里时不会被 hoverOnlyWhenSupported 包裹，
- * 触屏点完会一直保持，把收藏状态的颜色盖住。
- */
+/* 触屏点完会一直保持，把收藏状态的颜色盖住。 */
 @media (hover: hover) and (pointer: fine) {
   .iconfont:hover {
-    transform: scale(1.1);
     color: #0099ff;
   }
 }
 
 /*
- * 触屏上按钮偏小，手指容易点空。
- * 字号提到 1.45rem，高度撑到 2.5rem（40px 点击热区）；
- * 图标间距同时收窄一点，保证一排 6 个不会挤出控制栏。
+ * 控制栏按钮：点击热区由按钮承担，图标只在按钮内部切换。
+ * 直接给 <i> 加 :active，点击瞬间状态翻转会把元素隐藏，动画来不及播完。
  */
+.ctl-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  cursor: pointer;
+  will-change: transform, background-color;
+  background-color: transparent;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.16s ease, background-color 0.16s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctl-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* 放在 :hover 之后，按下时的高亮才能盖过悬停色 */
+.ctl-btn:active {
+  /* transform: scale(0.86); */
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.ctl-btn .iconfont:active {
+  transform: scale(0.86);
+}
+
+/* 按钮内的图标不再自带外边距和缩放，统一交给按钮控制 */
+.ctl-btn .iconfont {
+  margin: 0;
+  transform: none;
+}
+
+/* 图标切换：淡出缩小 → 淡入，避免硬切。
+   选择器带上 .iconfont 是为了压过它自己的 transition */
+.iconfont.icon-swap-enter-active,
+.iconfont.icon-swap-leave-active {
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.icon-swap-enter-from,
+.icon-swap-leave-to {
+  opacity: 0;
+  transform: scale(0.55);
+}
+
+.ctl-pop-anchor>.iconfont:active {
+  transform: scale(0.9);
+}
+
 @media (max-width: 767.98px) {
   .iconfont {
-    font-size: 1.45rem;
-    height: 2.5rem;
-    line-height: 2.5rem;
-    margin-left: 0.38rem;
-    margin-right: 0.38rem;
+    font-size: 2rem;
+    height: 2.2rem;
+    line-height: 2.2rem;
+    margin-left: 0.3rem;
+    margin-right: 0.3rem;
+  }
+
+  .ctl-btn .iconfont {
+    margin: 0;
+    height: auto;
+    line-height: 1;
   }
 }
 
@@ -372,10 +472,34 @@ const toggleCurrentFavorite = () => {
 
 /* ---------------- 控制栏弹出面板 ---------------- */
 .ctl-pop-anchor {
+  display: flex;
   position: relative;
   z-index: 45;
-  display: flex;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 9999px;
+  justify-content: center;
   align-items: center;
+  will-change: transform, background-color;
+  background-color: transparent;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.16s ease, background-color 0.16s ease;
+}
+
+.ctl-pop-anchor .iconfont {
+  margin: 0;
+  line-height: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctl-pop-anchor:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.ctl-pop-anchor:active {
+  /* transform: scale(0.86); */
+  background-color: rgba(255, 255, 255, 0.18);
 }
 
 .volume-pop,

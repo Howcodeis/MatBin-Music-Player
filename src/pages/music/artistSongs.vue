@@ -20,7 +20,7 @@ const store = musicStatus()
 const isMobile = useIsMobile()
 
 const { artistSongs, artistInfo, playType } = storeToRefs(store)
-const { headerCellStyle, headerRowStyle, rowStyle, cellStyle } = useTableStyle()
+const { headerCellStyle, headerRowStyle, rowStyle, cellStyle, rowClassName, markFavoriteClick, isJustFavorite } = useTableStyle()
 // 表格数据用筛选后的歌手热门，关键词来自顶部搜索框
 const { keyword: artistKeyword, filteredArtistSongs, resetArtistKeyword } = useArtistFilter()
 
@@ -56,13 +56,18 @@ const { handleLoadMore } = useLoadMore(async () => {
 
 // 点击行播放：切到歌手热门作为当前播放列表，上下首就在该歌手的热门里轮转
 const playChoose = (row) => {
+  // 刚点过收藏就不算选中歌曲
+  if (isJustFavorite()) return
   playType.value = PLAYTYPE.ARTIST
   store.setMusicInfo(row)
 }
 
 // 收藏：爱心在序号右侧，点击只切换收藏，不触发播放
 const isFavorite = id => store.isFavorite(id)
-const toggleFavorite = row => store.toggleFavorite(row)
+const toggleFavorite = row => {
+  markFavoriteClick()
+  store.toggleFavorite(row)
+}
 
 const albumOf = row => row.album?.name || row.al?.name || '-'
 const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
@@ -106,7 +111,7 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
         :size="isMobile ? 'small' : 'default'"
         :style="{ width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0)' }" @row-click="playChoose"
         :header-cell-style="headerCellStyle" :header-row-style="headerRowStyle" :row-style="rowStyle"
-        :cell-style="cellStyle">
+        :cell-style="cellStyle" :row-class-name="rowClassName">
         <el-table-column fixed :width="isMobile ? 38 : 60" label="#">
           <template #default="scope">
             <div class="index-num text-gray-200 select-none">
