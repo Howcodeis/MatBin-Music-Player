@@ -48,10 +48,17 @@ watch(() => route.params.id, (id) => {
 }, { immediate: true })
 
 // 触底加载：由 useLoadMore 保证同一时间只有一次请求
-const { handleLoadMore } = useLoadMore(async () => {
+const { isLoadingMore, handleLoadMore } = useLoadMore(async () => {
   // 数据不满一页说明没有下一页
-  if (artistSongs.value.length < store.searchSettings.artistLimit) return
+  if (artistSongs.value.length < store.searchSettings.artistLimit) {
+    return { added: 0, hasMore: false }
+  }
+  const before = artistSongs.value.length
   await store.loadMoreArtist()
+  return {
+    added: artistSongs.value.length - before,
+    hasMore: !store.searchSettings.isArtistOverCounts
+  }
 })
 
 // 点击行播放：切到歌手热门作为当前播放列表，上下首就在该歌手的热门里轮转
@@ -151,6 +158,11 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
           </template>
         </el-table-column>
       </el-table>
+    </div>
+
+    <!-- 触底加载中 -->
+    <div v-if="isLoadingMore" class="load-more-mask">
+      <span class="load-more-spinner"></span>
     </div>
   </div>
 </template>

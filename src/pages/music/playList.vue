@@ -32,11 +32,18 @@ const playChoose = (row) => {
 }
 
 // 触底加载：由 useLoadMore 保证同一时间只有一次请求
-const { handleLoadMore } = useLoadMore(async () => {
+const { isLoadingMore, handleLoadMore } = useLoadMore(async () => {
   const state = musicStatus()
-  // 数据不满一页说明没有下一页，直接跳过
-  if (!state.playList?.length || state.playList.length < state.searchSettings.searchLimit) return
+  // 数据不满一页说明没有下一页
+  if (!state.playList?.length || state.playList.length < state.searchSettings.searchLimit) {
+    return { added: 0, hasMore: false }
+  }
+  const before = state.playList.length
   await state.loadMore()
+  return {
+    added: state.playList.length - before,
+    hasMore: !state.searchSettings.isSearchOverCounts
+  }
 })
 
 // 收藏：爱心在序号右侧，点击只切换收藏，不触发播放
@@ -112,6 +119,11 @@ watch(() => store.searchVersion, async () => {
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 触底加载中 -->
+    <div v-if="isLoadingMore" class="load-more-mask">
+      <span class="load-more-spinner"></span>
+    </div>
   </div>
 </template>
 <style scoped>

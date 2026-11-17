@@ -9,6 +9,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
+import { toThumb } from '@/utils/music'
 
 const props = defineProps({
   song: {
@@ -29,8 +30,8 @@ const src = computed(() => {
   const song = props.song || {}
   const raw = song.al?.picUrl || song.album?.picUrl || song.cover || ''
   // /cloudsearch 的图床地址是 http://，https 部署会被浏览器当混合内容拦掉；
-  // 网易云同一个路径 https 也能访问，这里统一升级。
-  return raw.replace(/^http:\/\//i, 'https://')
+  // 网易云同一个路径 https 也能访问，这里统一升级。行内只显示 40px，取 80 的缩略图够清晰。
+  return toThumb(raw.replace(/^http:\/\//i, 'https://'), 80)
 })
 
 const finalSrc = computed(() => (failed.value || !src.value ? defaultCover : src.value))

@@ -8,6 +8,7 @@ import { musicStatus } from '@/store';
 import { storeToRefs } from 'pinia';
 import { normalBack } from '@/utils/MessageBack';
 import { PanelShowY, PanelHideY } from '@/utils/gsapTools'
+import { toThumb } from '@/utils/music';
 import defaultCover from '@/assets/image/109951173012411790.jpg';
 
 defineOptions({
@@ -88,17 +89,12 @@ const musicCoverPath = computed(() => {
  * 背景交叉淡变：
  * 先预加载新封面，等图片解码完再替换 displayCover，配合Transition做透明度过渡，
  */
-const toThumb = (url) => {
-  if (!url || !/^https?:/i.test(url) || url.includes('param=')) return url
-  return `${url}${url.includes('?') ? '&' : '?'}param=100y100`
-}
-
-const displayCover = ref(toThumb(musicCoverPath.value))
+const displayCover = ref(toThumb(musicCoverPath.value, 100))
 let coverSeq = 0
 watch(musicCoverPath, (url) => {
   if (!url || url === displayCover.value) return
   const seq = ++coverSeq
-  const thumb = toThumb(url)
+  const thumb = toThumb(url, 100)
   const preload = new Image()
   preload.onload = () => {
     if (seq === coverSeq) displayCover.value = thumb

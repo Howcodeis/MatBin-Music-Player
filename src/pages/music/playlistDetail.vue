@@ -44,9 +44,16 @@ watch(() => route.params.id, async (id) => {
   loading.value = false
 }, { immediate: true })
 
-const { handleLoadMore } = useLoadMore(async () => {
-  if (playlistSongs.value.length < store.searchSettings.playlistLimit) return
+const { isLoadingMore, handleLoadMore } = useLoadMore(async () => {
+  if (playlistSongs.value.length < store.searchSettings.playlistLimit) {
+    return { added: 0, hasMore: false }
+  }
+  const before = playlistSongs.value.length
   await store.loadMorePlaylist()
+  return {
+    added: playlistSongs.value.length - before,
+    hasMore: !store.searchSettings.isPlaylistOverCounts
+  }
 })
 
 const playChoose = (row) => {
@@ -139,6 +146,11 @@ const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
           </template>
         </el-table-column>
       </el-table>
+    </div>
+
+    <!-- 触底加载中 -->
+    <div v-if="isLoadingMore" class="load-more-mask">
+      <span class="load-more-spinner"></span>
     </div>
   </div>
 </template>

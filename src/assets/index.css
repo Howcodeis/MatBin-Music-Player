@@ -27,3 +27,30 @@ body {
   color: #6ec1ff;
 }
 
+
+/* 触底加载：表格底部居中的小圈 */
+.load-more-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.8rem;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.load-more-spinner {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #00b4ff;
+  border-radius: 50%;
+  animation: load-more-spin 0.7s linear infinite;
+}
+
+@keyframes load-more-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

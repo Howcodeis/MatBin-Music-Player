@@ -1,7 +1,7 @@
 <script setup>
 import { musicStatus } from '@/store';
 import { storeToRefs } from 'pinia';
-import { timeFormat, PLAYMODEL, PLAYTYPE } from '@/utils/music';
+import { timeFormat, PLAYMODEL, PLAYTYPE, toThumb } from '@/utils/music';
 import { computed, defineOptions, onMounted, onUnmounted, ref, watch } from 'vue';
 import defaultCover from '@/assets/image/109951173012411790.jpg';
 import { useCanHover } from '@/composables/useResponsive';
@@ -19,8 +19,9 @@ defineProps({
   toggleLyricBoard: Function
 })
 
+// 控制栏只显示 64px，取 130 的缩略图（2x 屏不糊）
 const smallMusicCover = computed(() => {
-  return currentMusicInfo.value.cover || defaultCover
+  return toThumb(currentMusicInfo.value.cover || defaultCover, 130)
 })
 
 /*

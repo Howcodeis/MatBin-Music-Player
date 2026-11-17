@@ -122,3 +122,12 @@ export const PercentageOfProgress = (currentTime, duration) => {
 export const TimeOfProgress = (currentTime) => {
   return timeFormat(currentTime)
 }
+
+/*
+ * 取缩略图：网易云图床支持 ?param=80y80 让服务端先裁好再返回。
+ * 本地资源和已经带参数的地址原样返回。
+ */
+export const toThumb = (url, size) => {
+  if (!url || !/^https?:/i.test(url) || url.includes('param=')) return url
+  return `${url}${url.includes('?') ? '&' : '?'}param=${size}y${size}`
+}

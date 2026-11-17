@@ -5,6 +5,7 @@
  */
 import { ref } from 'vue'
 import { musicStatus } from '@/store'
+import { normalBack } from '@/utils/MessageBack'
 
 // el-table 透明背景样式
 export function useTableStyle () {
@@ -50,20 +51,31 @@ export function useTableStyle () {
 }
 
 /**
- * 触底加载包装：同一时间只允许一次请求，避免滚动抖动触发重复加载
+ * 触底加载包装：同一时间只允许一次请求，避免滚动抖动触发重复加载。
+ * loader 返回 { added, hasMore } 时，会顺带在顶部提示结果。
  * @param {Function} loader 实际加载函数
  */
 export function useLoadMore (loader) {
   const isLoadingMore = ref(false)
+
   const handleLoadMore = async () => {
     if (isLoadingMore.value) return
     isLoadingMore.value = true
     try {
-      await loader()
+      const result = await loader()
+      if (!result) return
+      if (result.hasMore === false) {
+        normalBack('info', '已经到底啦', 1500)
+      } else if (result.added > 0) {
+        normalBack('success', `加载了 ${result.added} 首`, 1200)
+      }
+    } catch (error) {
+      normalBack('warning', '加载失败，请重试')
     } finally {
       isLoadingMore.value = false
     }
   }
+
   return { isLoadingMore, handleLoadMore }
 }
 
