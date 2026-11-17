@@ -3,26 +3,28 @@
  * @Date: 2026-11-13
  * @Description: 带防抖的 localStorage 适配器
  *
- * 背景：pinia-plugin-persistedstate 会在每次 state 变更时同步序列化并写入 localStorage。
- * 而播放器在 ontimeupdate 里每 100ms 更新一次 currentTime，
- * 等于每秒把整个 store（歌单 + 歌词 + 评论，实测约 119KB）序列化 10 次，并把同步
- * IO 打到主线程上。这里用防抖把写入合并成低频操作，语义不变（最后一次写胜出）。
  */
 const DEBOUNCE_MS = 800
 // key -> { timer, value }
 const pending = new Map()
+// key -> 上次真正写进 localStorage 的内容，用来跳过重复写入
+const lastWritten = new Map()
 
 const flush = key => {
   const item = pending.get(key)
   if (!item) return
   clearTimeout(item.timer)
   pending.delete(key)
+  // 内容没变就不写：播放时 currentTime 等高频字段变化，序列化结果其实是一样的
+  if (lastWritten.get(key) === item.value) return
   try {
     localStorage.setItem(key, item.value)
+    lastWritten.set(key, item.value)
   } catch (error) {
     // 超出配额时清掉旧数据，避免抛错打断播放
     console.warn('[storage] 持久化失败，已清空旧缓存:', error?.message)
     localStorage.removeItem(key)
+    lastWritten.delete(key)
   }
 }
 
@@ -42,6 +44,7 @@ export const debouncedLocalStorage = {
     const item = pending.get(key)
     if (item) clearTimeout(item.timer)
     pending.delete(key)
+    lastWritten.delete(key)
     localStorage.removeItem(key)
   }
 }

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, defineOptions, nextTick, provide, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, defineOptions, inject, nextTick, provide, ref, watch } from 'vue';
+import { onBeforeRouteLeave, useRoute } from 'vue-router';
 import controls from './components/controls.vue';
 import MusicLayout from './MusicLayout.vue';
 import soloPage from './components/lyricBoard/soloPage.vue';
@@ -15,6 +15,22 @@ defineOptions({
 })
 
 const { isShowAnimationLyrics, currentMusicInfo } = storeToRefs(musicStatus())
+
+const closeMusic = inject('closeMusic', null)
+
+/*
+ * 回主页时先播完收起动画再放行导航。
+ * 路由一变成 /，music 里的子路由就没匹配了，面板会先变空再动。
+ */
+onBeforeRouteLeave(async (to) => {
+  if (to.name !== 'home' || !closeMusic) return true
+  try {
+    await closeMusic()
+  } catch (error) {
+    // 动画出错也不拦着导航
+  }
+  return true
+})
 
 const isShowSiderMenu = ref(false)
 const showSiderMenu = () => {
@@ -48,11 +64,15 @@ const toggleLyricBoard = () => {
 /*
  * 全屏歌词层打开时切换路由（例如点歌手名跳转）要先按原路收起：
  * 打开时 PanelHideY 已把 listPage 的 opacity 设为 0，若只把标志位改 false，
- * 新页面会留在透明状态看不见，所以必须走 PanelHideY → PanelShowY 这条动画链。
+ * 新页面会留在透明状态看不见。
+ *
+ * 只在音乐区内部切页时才收；回主页不重置，这样下次进来还是歌词页。
  */
 const route = useRoute()
-watch(() => route.fullPath, () => {
+watch(() => route.fullPath, (to, from) => {
   if (!isShowAnimationLyrics.value) return
+  // 只有音乐区内部切页才收起；进出音乐区都保留歌词状态
+  if (!to.startsWith('/music/') || !from.startsWith('/music/')) return
   PanelHideY(soloItem.value, 200, () => {
     isShowAnimationLyrics.value = false
     PanelShowY(listPage.value, 0, 0)
@@ -66,11 +86,7 @@ const musicCoverPath = computed(() => {
 
 /*
  * 背景交叉淡变：
- * 先预加载新封面，等图片解码完再替换 displayCover，配合 <Transition> 做透明度过渡，
- * 淡入过程中不会空白或闪白。coverSeq 用来在快速切歌时丢掉过期的预加载结果。
- *
- * 背景只是模糊色块，取 100x100 的缩略图就够：小图放大本身就糊，
- * 后面那层 blur 的计算量能从百万像素级降到几千像素，拖动进度条时不会出现块状伪影。
+ * 先预加载新封面，等图片解码完再替换 displayCover，配合Transition做透明度过渡，
  */
 const toThumb = (url) => {
   if (!url || !/^https?:/i.test(url) || url.includes('param=')) return url

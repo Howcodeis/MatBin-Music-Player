@@ -1,6 +1,6 @@
 <script setup>
-import { defineOptions, inject, nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { defineOptions, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import searchBar from './components/searchBar.vue';
 import siderMenu from './components/siderMenu.vue';
 import { useIsMobile } from '@/composables/useResponsive';
@@ -12,6 +12,23 @@ defineOptions({
 
 // 窄屏判定与 Tailwind 的 sm 断点保持一致，避免 CSS 和 JS 各说各话
 const isMobile = useIsMobile()
+
+const router = useRouter()
+
+// 切页动画方向：进详情页从右推入，退出反向滑回，平级标签之间淡变
+const pageTransition = ref('')
+const stopTransition = router.afterEach((to, from) => {
+  if (!from.path.startsWith('/music/') || !to.path.startsWith('/music/')) {
+    pageTransition.value = ''
+    return
+  }
+  const toDepth = to.meta.depth ?? 0
+  const fromDepth = from.meta.depth ?? 0
+  pageTransition.value = toDepth > fromDepth
+    ? 'slide-forward'
+    : toDepth < fromDepth ? 'slide-back' : 'fade-tag'
+})
+onUnmounted(stopTransition)
 
 // 抽屉的开关状态由父级 music.vue 持有
 const siderMenuCtx = inject('siderMenu', null)
@@ -84,13 +101,70 @@ watch(() => route.fullPath, () => {
       <searchBar></searchBar>
     </div>
     <div class='relative overflow-scroll h-[90%]'>
-      <!-- 播放列表路由 -->
-      <router-view></router-view>
+      <!-- 播放列表路由：缓存子页面，切标签不重新挂载；详情页滑动切换，平级页淡变 -->
+      <router-view v-slot="{ Component, route }">
+        <Transition :name="pageTransition">
+          <KeepAlive :max="6">
+            <component :is="Component" :key="route.fullPath" />
+          </KeepAlive>
+        </Transition>
+      </router-view>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* 详情页从右推入，列表页轻微左移淡出 */
+.slide-forward-enter-from {
+  transform: translateX(100%);
+}
+
+.slide-forward-enter-active {
+  transition: transform 0.28s ease;
+  z-index: 2;
+}
+
+.slide-forward-leave-active {
+  transition: transform 0.28s ease, opacity 0.28s ease;
+  z-index: 1;
+}
+
+.slide-forward-leave-to {
+  transform: translateX(-24%);
+  opacity: 0;
+}
+
+/* 退出详情页：反向滑回 */
+.slide-back-enter-from {
+  transform: translateX(-24%);
+  opacity: 0;
+}
+
+.slide-back-enter-active {
+  transition: transform 0.28s ease, opacity 0.28s ease;
+  z-index: 1;
+}
+
+.slide-back-leave-active {
+  transition: transform 0.28s ease;
+  z-index: 2;
+}
+
+.slide-back-leave-to {
+  transform: translateX(100%);
+}
+
+/* 列表页之间：淡变 */
+.fade-tag-enter-from,
+.fade-tag-leave-to {
+  opacity: 0;
+}
+
+.fade-tag-enter-active,
+.fade-tag-leave-active {
+  transition: opacity 0.5s ease;
+}
+
 .border-gradient {
   border-image: linear-gradient(to right, gray, white) 1;
 }

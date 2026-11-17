@@ -1,8 +1,9 @@
 <script setup>
-import { defineOptions, onMounted } from 'vue';
+import { defineOptions, onMounted, provide } from 'vue';
+import gsap from 'gsap';
+import Home from './pages/home/home.vue';
 import { musicStatus } from './store';
 import defaultCover from '@/assets/image/109951173012411790.jpg';
-import { animateToHidden, animateToVisible } from './utils/gsapTools';
 
 defineOptions({
   name: 'App'
@@ -11,12 +12,8 @@ defineOptions({
 const store = musicStatus()
 
 /*
- * 移动端软键盘弹出会让 window.innerHeight 变小，
- * 面板高度按百分比重算，controls 被压扁后和进度条叠在一起。
- *
- * 判断依据用「输入框是否聚焦」而不是高度变化的幅度：
- * 键盘高度和转屏变化在数值上有重叠，靠阈值分不开。
- * 聚焦期间一律不跟随 innerHeight，失焦后再按真实尺寸重算。
+ * 移动端软键盘会改变 innerHeight，面板按百分比重算后 controls 会被压扁。
+ * 用输入框是否聚焦来判断，聚焦期间不跟随高度变化。
  */
 const HEIGHT_VAR = '--app-height'
 let inputFocused = false
@@ -28,13 +25,81 @@ const applyAppHeight = (height) => {
 const syncViewportHeight = () => {
   const height = window.innerHeight
   if (!height) return
-  // 输入框聚焦时 innerHeight 的变化来自软键盘，忽略
   if (inputFocused) return
   applyAppHeight(height)
 }
 
 const isTextField = (el) =>
   Boolean(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+
+// 音乐页才有进度条容器，用它区分是不是音乐页
+const isMusicPage = (el) => Boolean(el?.querySelector?.('#audioSchedule'))
+
+let musicEl = null
+let closingManually = false
+
+/*
+ * 手动收起音乐页：先播完动画再跳路由。
+ * 否则路由一变成 /，music 里的子路由就没匹配了，面板会先变空再动。
+ */
+provide('closeMusic', () => new Promise((resolve) => {
+  if (!musicEl) {
+    resolve()
+    return
+  }
+  closingManually = true
+  gsap.to(musicEl, {
+    yPercent: 100,
+    scale: 0,
+    opacity: 0,
+    duration: 0.45,
+    ease: 'power2.in',
+    onComplete: () => {
+      musicEl = null
+      resolve()
+    }
+  })
+}))
+
+// 音乐页从底部升起、同时放大，最后停在原本的位置
+const onPageEnter = (el, done) => {
+  if (!isMusicPage(el)) {
+    done()
+    return
+  }
+  musicEl = el
+  el.style.zIndex = '2'
+  gsap.fromTo(el, { yPercent: 100, scale: 0, opacity: 0 }, {
+    yPercent: 0,
+    scale: 1,
+    opacity: 1,
+    duration: 0.55,
+    ease: 'power3.out',
+    onComplete: done
+  })
+}
+
+// 关闭时反向：缩小、落回底部
+const onPageLeave = (el, done) => {
+  if (!isMusicPage(el)) {
+    done()
+    return
+  }
+  // 动画已经提前播过，这里直接放行
+  if (closingManually) {
+    closingManually = false
+    done()
+    return
+  }
+  gsap.to(el, {
+    yPercent: 100,
+    scale: 0,
+    opacity: 0,
+    duration: 0.45,
+    ease: 'power2.in',
+    onComplete: done
+  })
+}
 
 onMounted(() => {
   store.initAudio()
@@ -52,39 +117,18 @@ onMounted(() => {
     syncViewportHeight()
   })
 })
-
-// 记录每个元素上正在跑的补间，打断时能强制收尾
-const tweens = new WeakMap()
-
-/**
- * 结束元素上残留的补间
- * 直接 kill 不会触发 onComplete，Vue 等不到 done 会卡住过渡，
- * 所以这里用 progress(1) 让它跑到终点，把上一个 done 正常兑现。
- */
-const finishPrevTween = (el) => {
-  const prev = tweens.get(el)
-  if (prev && prev.isActive()) prev.progress(1)
-}
-
-const onPageEnter = (el, done) => {
-  finishPrevTween(el)
-  const tween = animateToVisible(el, 0.5, 0.92, done)
-  tweens.set(el, tween)
-}
-
-const onPageLeave = (el, done) => {
-  finishPrevTween(el)
-  const tween = animateToHidden(el, 0.5, 0, done)
-  tweens.set(el, tween)
-}
 </script>
 
 <template>
-  <!-- 整站背景固定用本地默认图，不再跟随当前歌曲封面（随歌封面只在 music.vue 内部展示） -->
   <div class="w-full body flex items-center justify-center" :style="{ backgroundImage: 'url(' + defaultCover + ')' }">
-  <router-view v-slot="{ Component }">
+    <!-- 主页常驻，音乐页升起来时它一直在下面 -->
+    <Home />
+
+    <router-view v-slot="{ Component }">
       <Transition :css="false" @enter="onPageEnter" @leave="onPageLeave">
-        <component :is="Component" />
+        <KeepAlive :max="4">
+          <component :is="Component" />
+        </KeepAlive>
       </Transition>
     </router-view>
   </div>
@@ -92,7 +136,7 @@ const onPageLeave = (el, done) => {
 
 <style scoped>
 .body {
-  /* --app-height 由 App.vue 写入，锁定软键盘弹出前的可视高度 */
+  /* --app-height 由上面写入，锁定软键盘弹出前的可视高度 */
   height: var(--app-height, 100vh);
   background-size: cover;
   background-position: center;

@@ -123,6 +123,10 @@ onMounted(async () => {
 
 <style scoped>
 .hot-wrap {
+  /* 和其他列表页一样绝对定位铺满，切到详情页时才能和新页面重叠做滑动 */
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
   padding: 0.75rem 0.9rem 1.2rem;
 }
 

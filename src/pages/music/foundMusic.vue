@@ -6,7 +6,7 @@
  * 这里直接以歌曲列表呈现：点行播放/收藏，播放类型记 DAILY，
  * 上下首就在当日推荐里轮转。
  */
-import { computed, defineOptions, onMounted, ref } from 'vue'
+import { computed, defineOptions, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
 import { timeFormat, PLAYTYPE } from '@/utils/music'
@@ -55,18 +55,26 @@ const toggleFavorite = row => {
 const albumOf = row => row.album?.name || row.al?.name || '-'
 const durationOf = row => timeFormat((row.duration || row.dt) / 1000)
 
-onMounted(async () => {
-  /*
-   * 只有「今天还没拉过」才请求。
-   * dailySongs 会持久化到 localStorage，不能只判断有没有数据，
-   * 要按日期判断：不是今天的就重拉。
-   */
+const refreshDaily = async () => {
+  // 今天的已经拉过就直接用，跨天才重新请求
   if (!store.needRefreshDaily()) {
     loading.value = false
     return
   }
   await store.setDailySongs()
   loading.value = false
+}
+
+onMounted(refreshDaily)
+
+// 页面被 KeepAlive 缓存后不会重新挂载，跨天再进来要靠 activated 补一次
+let activatedOnce = false
+onActivated(() => {
+  if (!activatedOnce) {
+    activatedOnce = true
+    return
+  }
+  refreshDaily()
 })
 </script>
 

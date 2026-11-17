@@ -5,9 +5,9 @@
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
+import { h } from 'vue'
 
 // 统一管理懒加载的组件路径，方便维护
-const Home = () => import('../pages/home/home.vue')
 const Music = () => import('../pages/music/music.vue')
 const PlayList = () => import('../pages/music/playList.vue')
 const Favorite = () => import('../pages/music/favorite.vue')
@@ -54,7 +54,8 @@ const routes = [
     meta: {
       menu: '主页'
     },
-    component: Home,
+    // 主页由 App.vue 常驻渲染，这里只是占位，保证进 /music 时主页不被卸载
+    component: { name: 'HomePlaceholder', render: () => h('div', { style: 'display:none' }) },
   },
   {
     path: '/music',
@@ -102,7 +103,8 @@ const routes = [
         path: 'artist/:id',
         name: 'artistSongs',
         meta: {
-          menu: '歌手热门'
+          menu: '歌手热门',
+          depth: 1
         },
         component: ArtistSongs,
       },
@@ -111,7 +113,8 @@ const routes = [
         path: 'playlist/:id',
         name: 'playlistDetail',
         meta: {
-          menu: '歌单详情'
+          menu: '歌单详情',
+          depth: 1
         },
         component: PlaylistDetail,
       }
