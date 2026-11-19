@@ -1,10 +1,11 @@
 <script setup>
-import { defineOptions, onMounted, provide, ref } from 'vue'
+import { defineOptions, onMounted, provide } from 'vue'
 import gsap from 'gsap'
 import Home from './pages/home/home.vue'
 import { musicStatus } from './store'
 import { playProgress, persistProgress } from './utils/playProgress'
-import defaultCover from '@/assets/image/109951173012411790.jpg'
+// 主页改纯色后暂时不用这张图；恢复背景图时放开
+// import defaultCover from '@/assets/image/109951173012411790.jpg'
 
 defineOptions({
   name: 'App'
@@ -12,8 +13,8 @@ defineOptions({
 
 const store = musicStatus()
 
-// 背景图加载完再淡入，首屏不用等它
-const bgReady = ref(false)
+// 背景图已停用，主页走纯色；恢复背景图时把这个和模板里的 bg-fade 一起放开
+// const bgReady = ref(false)
 
 /*
  * 移动端软键盘会改变 innerHeight，面板按百分比重算后 controls 会被压扁。
@@ -160,23 +161,24 @@ onMounted(() => {
   import('./pages/music/artistSongs.vue')
   import('./pages/music/playlistDetail.vue')
 
-  // 背景图单独预加载，好了再淡入；首屏先出内容，不等这张图解码
-  const bg = new Image()
-  bg.onload = () => {
-    bgReady.value = true
-  }
-  bg.src = defaultCover
+  // 背景图预加载已停用（主页改纯色），恢复背景图时一起放开
+  // const bg = new Image()
+  // bg.onload = () => {
+  //   bgReady.value = true
+  // }
+  // bg.src = defaultCover
 })
 </script>
 
 <template>
   <div class="w-full body flex items-center justify-center">
-    <!-- 背景图单独一层：加载完再淡入，避免首屏卡在这张 213KB 的图上 -->
+    <!-- 主页改纯色，背景图暂时不用。要恢复就把这段和 bgReady、图片预加载一起放开
     <div
       class="bg-fade"
       :class="{ 'is-ready': bgReady }"
       :style="{ backgroundImage: `url(${defaultCover})` }"
     ></div>
+    -->
     <!-- 主页常驻，音乐页升起来时它一直在下面 -->
     <Home />
 
@@ -194,13 +196,13 @@ onMounted(() => {
 .body {
   /* --app-height 由上面写入，锁定软键盘弹出前的可视高度 */
   height: var(--app-height, 100vh);
-  background-color: #14141f;
+  background-color: #323737;
   position: relative;
   /* 建立独立层叠上下文：否则 -1 的背景层会跑到深色底下面被遮住 */
   isolation: isolate;
 }
 
-/* 背景图放在独立图层里，才能用 opacity 做淡入；挂在 .body 上没法过渡 */
+/* 背景图图层已停用（主页改纯色），恢复背景图时一起放开
 .bg-fade {
   position: absolute;
   inset: 0;
@@ -215,6 +217,7 @@ onMounted(() => {
 .bg-fade.is-ready {
   opacity: 1;
 }
+*/
 
 .body::before {
   content: '';

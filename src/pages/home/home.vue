@@ -8,12 +8,18 @@ defineOptions({
 
 <template>
   <div class="container">
+    <!-- 流动色背景：只做 transform 平移，走合成层，不触发重绘 -->
+    <div class="aurora" aria-hidden="true"></div>
+
     <div class="inner">
       <header class="hero">
         <p class="brand">Matbin Music</p>
+        <!-- 引子文案暂时隐藏，要恢复把下面这段放开
         <p class="lead">流年辗转，岁月长河慢慢流逝。如果给你一架时光机，你会让它载你到何方？</p>
+        -->
       </header>
 
+      <!-- 三个分章 + 转折句暂时隐藏，要恢复把这一整段放开
       <section class="chapter">
         <h2>重温无忧无虑的童年时光？</h2>
         <p>那时的情绪单纯：因为父母一句夸奖开心一上午，因为作业没得优秀难过一整天。</p>
@@ -44,9 +50,12 @@ defineOptions({
           但是，人生没有那么多如果——望你能渡好当下时光；也幸亏人生没有如果，梦醒时依然可以保持努力。风雨人生里，简单最快乐。
         </p>
       </section>
+      -->
 
       <footer class="outro">
+        <!-- 说明文案暂时隐藏，要恢复把下面这段放开
         <p>为了让你在音乐的世界里找到属于自己的时光机，我们为你准备了一个小小的音乐播放器。</p>
+        -->
         <router-link class="cta" :to="{ name: 'music' }">
           Let's find a time machine for music!
         </router-link>
@@ -62,7 +71,7 @@ defineOptions({
  * 两个页面必须绝对定位重叠，否则会互相挤开。
  */
 .container {
-  position: absolute;
+  position: relative;
   inset: 0;
   width: 100%;
   overflow-y: auto;
@@ -70,19 +79,65 @@ defineOptions({
   /*
    * 背景是彩色花卉 + 天空，App.vue 那层 50% 黑遮罩压不住长文的对比度。
    * 这里再叠一层，只影响这一页，不动全局。
+   * 主页改纯色后不再需要，要恢复长文时再放开
+   * background: rgba(3, 8, 18, 0.44);
    */
-  background: rgba(3, 8, 18, 0.44);
   /* 内容不满一屏时居中，超出时从顶部开始滚 —— margin:auto 的经典用法，
      比 justify-content:center 更稳（后者在内容溢出时会把顶部裁掉） */
   display: flex;
 }
 
 .inner {
+  position: relative;
+  z-index: 1;
   margin: auto;
   width: 100%;
   max-width: 40rem;
   padding: 3.5rem 1.5rem 4rem;
   color: rgb(191 219 254);
+  /* 只留标题和按钮，整体居中 */
+  text-align: center;
+}
+
+/*
+ * 流动色：一块比屏幕大很多的渐变，整体缓慢平移 + 轻微缩放。
+ * 关键是只动 transform —— 渐变本身是静态的，浏览器只做图层合成，
+ * 不用每帧重新栅格化（改 background-position 就会，全屏重绘很贵）。
+ * 颜色都压了透明度，整体偏暗，不抢标题的注意力。
+ */
+.aurora {
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(45% 50% at 24% 26%, rgba(104, 86, 214, 0.62), transparent 62%),
+    radial-gradient(50% 48% at 76% 56%, rgba(38, 116, 190, 0.55), transparent 62%),
+    radial-gradient(44% 46% at 52% 86%, rgba(150, 62, 138, 0.46), transparent 62%),
+    linear-gradient(158deg, #12121f 0%, #17172e 48%, #0f1119 100%);
+  will-change: transform;
+  animation: aurora-drift 34s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(2%, 3%, 0) scale(1.07);
+  }
+
+  100% {
+    transform: translate3d(3%, -3%, 0) scale(1.04);
+  }
+}
+
+/* 系统开了「减少动态效果」就不动 */
+@media (prefers-reduced-motion: reduce) {
+  .aurora {
+    animation: none;
+  }
 }
 
 /* ---------------- 标题区 ---------------- */
@@ -92,6 +147,8 @@ defineOptions({
   color: #ffffff;
   margin-bottom: 1.4rem;
   text-shadow: 0 2px 10px rgb(0 0 0 / 0.6);
+  /* 字间距会在末字右侧留白，补等量的左缩进，居中才真的居中 */
+  padding-left: 0.32em;
 }
 
 .lead {
@@ -122,7 +179,7 @@ defineOptions({
   color: rgb(232 239 250 / 0.94);
 }
 
-.chapter p + p {
+.chapter p+p {
   margin-top: 0.55rem;
 }
 
@@ -141,10 +198,10 @@ defineOptions({
 
 /* ---------------- 结尾与按钮 ---------------- */
 .outro {
-  margin-top: 2.6rem;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 1.1rem;
 }
 
@@ -155,6 +212,7 @@ defineOptions({
 }
 
 .cta {
+  position: relative;
   display: inline-flex;
   align-items: center;
   padding: 0.55rem 1.5rem;
