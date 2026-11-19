@@ -1,8 +1,9 @@
 <script setup>
-import { defineOptions, onMounted, provide } from 'vue'
+import { defineOptions, onMounted, provide, ref } from 'vue'
 import gsap from 'gsap'
 import Home from './pages/home/home.vue'
 import { musicStatus } from './store'
+import { playProgress, persistProgress } from './utils/playProgress'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
 
 defineOptions({
@@ -10,6 +11,9 @@ defineOptions({
 })
 
 const store = musicStatus()
+
+// 背景图加载完再淡入，首屏不用等它
+const bgReady = ref(false)
 
 /*
  * 移动端软键盘会改变 innerHeight，面板按百分比重算后 controls 会被压扁。
@@ -138,28 +142,41 @@ onMounted(() => {
     syncViewportHeight()
   })
 
-  // 空闲时把音乐区所有页面的代码预取下来：
-  // 路由都是懒加载，不预取的话第一次点侧栏要等 chunk 下载才渲染
-  const idle = window.requestIdleCallback
-    ? fn => window.requestIdleCallback(fn, { timeout: 1500 })
-    : fn => setTimeout(fn, 1200)
-  idle(() => {
-    import('./pages/music/music.vue')
-    import('./pages/music/foundMusic.vue')
-    import('./pages/music/playList.vue')
-    import('./pages/music/favorite.vue')
-    import('./pages/music/hotPlayList.vue')
-    import('./pages/music/artistSongs.vue')
-    import('./pages/music/playlistDetail.vue')
+  // 离开页面 / 切后台时把播放进度落盘，下次进来接着听
+  const savePlayProgress = () => persistProgress(store.currentMusicInfo?.id, playProgress.value)
+  window.addEventListener('pagehide', savePlayProgress)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') savePlayProgress()
   })
+
+  // 首屏渲染完立刻预取音乐区代码。
+  // 之前用 requestIdleCallback 等空闲，结果被背景图解码占着主线程一直推迟，
+  // 用户点「进入」时 chunk 还没下，看着像卡住。
+  import('./pages/music/music.vue')
+  import('./pages/music/foundMusic.vue')
+  import('./pages/music/playList.vue')
+  import('./pages/music/favorite.vue')
+  import('./pages/music/hotPlayList.vue')
+  import('./pages/music/artistSongs.vue')
+  import('./pages/music/playlistDetail.vue')
+
+  // 背景图单独预加载，好了再淡入；首屏先出内容，不等这张图解码
+  const bg = new Image()
+  bg.onload = () => {
+    bgReady.value = true
+  }
+  bg.src = defaultCover
 })
 </script>
 
 <template>
-  <div
-    class="w-full body flex items-center justify-center"
-    :style="{ backgroundImage: 'url(' + defaultCover + ')' }"
-  >
+  <div class="w-full body flex items-center justify-center">
+    <!-- 背景图单独一层：加载完再淡入，避免首屏卡在这张 213KB 的图上 -->
+    <div
+      class="bg-fade"
+      :class="{ 'is-ready': bgReady }"
+      :style="{ backgroundImage: `url(${defaultCover})` }"
+    ></div>
     <!-- 主页常驻，音乐页升起来时它一直在下面 -->
     <Home />
 
@@ -177,9 +194,26 @@ onMounted(() => {
 .body {
   /* --app-height 由上面写入，锁定软键盘弹出前的可视高度 */
   height: var(--app-height, 100vh);
+  background-color: #14141f;
+  position: relative;
+  /* 建立独立层叠上下文：否则 -1 的背景层会跑到深色底下面被遮住 */
+  isolation: isolate;
+}
+
+/* 背景图放在独立图层里，才能用 opacity 做淡入；挂在 .body 上没法过渡 */
+.bg-fade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background-size: cover;
   background-position: center;
-  position: relative;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.bg-fade.is-ready {
+  opacity: 1;
 }
 
 .body::before {

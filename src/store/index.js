@@ -23,7 +23,7 @@ import { PLAYMODEL, PLAYTYPE, getNextSong } from '@/utils/music'
 import { ref } from 'vue'
 import { normalBack } from '../utils/MessageBack'
 import { debouncedLocalStorage } from '../utils/storage'
-import { playProgress } from '../utils/playProgress'
+import { playProgress, persistProgress, readPersistedProgress } from '../utils/playProgress'
 import { withTranslation } from '../utils/lyric'
 
 const audio = new Audio()
@@ -211,6 +211,9 @@ export const musicStatus = defineStore('musicinfo', {
       this.isTouch = false
       this.isLoadingMusic = false
       switching = false
+
+      // 恢复刷新前存下的进度（换过歌的话 id 对不上，会返回 0）
+      playProgress.value = readPersistedProgress(this.currentMusicInfo?.id)
 
       if (this.currentMusic) {
         const total = this.currentMusic.duration || this.currentMusic.dt
@@ -676,6 +679,8 @@ export const musicStatus = defineStore('musicinfo', {
       if (this.isPlay) {
         audio.pause()
         this.isPlay = false
+        // 暂停时把位置记下来，下次接着听
+        persistProgress(this.currentMusicInfo.id, playProgress.value)
         return
       }
       if (!this.currentMusicInfo.url) {
