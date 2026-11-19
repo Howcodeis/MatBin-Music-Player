@@ -26,7 +26,7 @@ const lyricMove = () => {
   const target = index >= 0 ? board.children[index] : null
   if (!target) return
   // offsetTop 为 0 是第一行合法的情况，不能用 !offsetTop 判断
-  const offset = target.offsetTop - board.offsetHeight * 0.8
+  const offset = target.offsetTop - board.offsetHeight * 0.7
   const top = Math.max(offset, 0)
   board.scrollTo({ top, behavior: 'smooth' })
 }

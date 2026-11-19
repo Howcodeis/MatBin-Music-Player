@@ -38,8 +38,8 @@ const { list, containerProps, wrapperProps } = useVirtualList(
 // 复用虚拟列表的滚动容器做触底加载
 useInfiniteScroll(containerProps.ref, () => emit('load-more'), {
   distance: 200,
-  // 没有更多 / 正在加载时不再触发，避免数据不满一屏时反复请求
-  canLoad: () => props.hasMore && !props.loading
+  // 没有数据时不触发：空容器永远被判定在底部，会误判成「已经到底」
+  canLoad: () => props.songs.length > 0 && props.hasMore && !props.loading
 })
 
 const pad = n => (n < 10 ? '0' + n : String(n))
@@ -158,6 +158,9 @@ defineExpose({
   height: 60px;
   color: #fff;
   cursor: pointer;
+  transition: background-color 0.16s ease;
+  /* 关掉移动端点击时那层系统蓝色高亮，用自己的按下色 */
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (max-width: 767.98px) {
@@ -172,6 +175,26 @@ defineExpose({
 
 .vlist-row.is-playing .song-name {
   color: #6ec1ff;
+}
+
+/* 桌面：鼠标悬浮轻微提亮，播放行用同色系加深 */
+@media (hover: hover) and (pointer: fine) {
+  .vlist-row:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .vlist-row.is-playing:hover {
+    background-color: rgba(0, 153, 255, 0.24);
+  }
+}
+
+/* 按下反馈：手机没有 hover，靠这个给即时响应 */
+.vlist-row:active {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.vlist-row.is-playing:active {
+  background-color: rgba(0, 153, 255, 0.3);
 }
 
 .col-idx {

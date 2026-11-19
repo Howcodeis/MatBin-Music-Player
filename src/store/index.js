@@ -23,6 +23,7 @@ import { PLAYMODEL, PLAYTYPE, getNextSong } from '@/utils/music'
 import { ref } from 'vue'
 import { normalBack } from '../utils/MessageBack'
 import { debouncedLocalStorage } from '../utils/storage'
+import { playProgress } from '../utils/playProgress'
 import { withTranslation } from '../utils/lyric'
 
 const audio = new Audio()
@@ -147,8 +148,9 @@ export const musicStatus = defineStore('musicinfo', {
     isFavorite() {
       return id => this.favorite.some(item => item?.id === id)
     },
+    // 播放进度不在 state 里（见 utils/playProgress），这里只是方便组件取值
     getCurrentTime() {
-      return this.currentMusicInfo.currentTime
+      return playProgress.value
     },
     getDuration() {
       return this.currentMusicInfo.duration
@@ -254,8 +256,9 @@ export const musicStatus = defineStore('musicinfo', {
 
         // 拖动进度条期间不要用旧时间覆盖用户拖动的位置
         if (!this.isTouch) {
-          // 保留小数：歌词动画依赖真实剩余时长，取整会造成最大 1s 的误差
-          this.currentMusicInfo.currentTime = audio.currentTime
+          // 写到 store 外面：这个值每 250ms 变一次，放 state 里会触发全量持久化，
+          // 播放时的动画卡顿主要就是它引起的
+          playProgress.value = audio.currentTime
         }
 
         // 更新总时长（优先用接口返回的时长，避免流式加载时 duration 为 Infinity）
@@ -412,7 +415,7 @@ export const musicStatus = defineStore('musicinfo', {
       this.isPlay = false
       this.isTouch = false
       this.currentMusicInfo.url = ''
-      this.currentMusicInfo.currentTime = 0
+      playProgress.value = 0
       this.currentMusicInfo.currentLyricIndex = -1
     },
     /*
@@ -613,7 +616,7 @@ export const musicStatus = defineStore('musicinfo', {
         // skipForward 要一起带过去，否则重试失败后自动跳过会丢掉方向
         return this.setMusicInfo(this.currentMusic, {
           autoplay,
-          resumeAt: this.currentMusicInfo.currentTime,
+          resumeAt: playProgress.value,
           skipForward
         })
       }
@@ -697,7 +700,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
       return this.setMusicInfo(this.currentMusic, {
         autoplay: true,
-        resumeAt: this.currentMusicInfo.currentTime
+        resumeAt: playProgress.value
       })
     },
     // 音量控制
@@ -719,7 +722,7 @@ export const musicStatus = defineStore('musicinfo', {
       // 纯文本歌词的 time 为 null，点击不应该跳到 0
       if (time == null || !Number.isFinite(time)) return
       audio.currentTime = time
-      this.currentMusicInfo.currentTime = time
+      playProgress.value = time
       this.syncLyricIndex(time)
     },
     /*
@@ -731,7 +734,7 @@ export const musicStatus = defineStore('musicinfo', {
     setProgress(time) {
       const value = Number(time)
       if (Number.isFinite(value)) {
-        this.currentMusicInfo.currentTime = Math.max(0, value)
+        playProgress.value = Math.max(0, value)
       }
     },
     // 仅在真实指针按下/抬起时维护拖动标记，彻底绕开 el-slider 的 @input 误报
@@ -743,16 +746,16 @@ export const musicStatus = defineStore('musicinfo', {
       const value = Number(time)
       const target = Number.isFinite(value)
         ? Math.max(0, value)
-        : Math.max(0, Number(this.currentMusicInfo.currentTime) || 0)
+        : Math.max(0, Number(playProgress.value) || 0)
 
       if (Number.isFinite(audio.duration) && audio.duration > 0) {
         // 接口给的时长是整秒，真实音频可能略长/略短，seek 时钳到实际范围
         audio.currentTime = Math.min(target, audio.duration)
-        this.currentMusicInfo.currentTime = audio.currentTime
+        playProgress.value = audio.currentTime
         this.syncLyricIndex(audio.currentTime)
       } else {
         audio.currentTime = 0
-        this.currentMusicInfo.currentTime = 0
+        playProgress.value = 0
       }
       this.isTouch = false
     },
@@ -912,6 +915,26 @@ export const musicStatus = defineStore('musicinfo', {
   // 持久化存储
   persist: {
     storage: debouncedLocalStorage,
-    key: 'music-player'
+    key: 'music-player',
+    /*
+     * 只存需要跨刷新保留的字段。
+     * 歌单歌曲、歌手歌曲这类大列表刷新后会重新请求，存着只会拖慢每次序列化；
+     * 播放进度在 utils/playProgress 里，本来就不在这里。
+     */
+    paths: [
+      'volume',
+      'playType',
+      'playMode',
+      'currentMusic',
+      'favorite',
+      'playList',
+      'keywords',
+      'dailySongs',
+      'dailySongsDate',
+      'isShowScrollLyrics',
+      'isShowAnimationLyrics',
+      'currentMusicInfo',
+      'searchSettings'
+    ]
   }
 })

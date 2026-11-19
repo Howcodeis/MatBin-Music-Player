@@ -2,6 +2,7 @@
 import { musicStatus } from '@/store'
 import { storeToRefs } from 'pinia'
 import { timeFormat, PLAYMODEL, PLAYTYPE, toThumb } from '@/utils/music'
+import { playProgress } from '@/utils/playProgress'
 import { computed, defineOptions, onMounted, onUnmounted, ref, watch } from 'vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
 import { useCanHover } from '@/composables/useResponsive'
@@ -62,7 +63,7 @@ const sliderMax = computed(() => {
 
 const dragTipStyle = computed(() => {
   const duration = Number(currentMusicInfo.value.duration) || 0
-  const time = Number(currentMusicInfo.value.currentTime) || 0
+  const time = Number(playProgress.value) || 0
   // 位置仍按百分比渲染，但由(秒 / 总秒数)现算，不再依赖单独的百分比字段
   const percent = duration > 0 ? (time / duration) * 100 : 0
   const clamped = Math.min(100, Math.max(0, percent))
@@ -296,14 +297,14 @@ const cyclePlayMode = () => {
     <!-- 拖动 / 桌面端悬浮时，跟随进度显示当前时间与总时长 -->
     <Transition name="drag-tip">
       <div v-show="showTimeTip" class="drag-time" :style="dragTipStyle" aria-hidden="true">
-        <span class="drag-time__current">{{ timeFormat(currentMusicInfo.currentTime) }}</span>
+        <span class="drag-time__current">{{ timeFormat(playProgress) }}</span>
         <span class="drag-time__sep">/</span>
         <span class="drag-time__total">{{ timeFormat(currentMusicInfo.duration) }}</span>
       </div>
     </Transition>
     <el-slider
       class="absolute w-[98%] left-[1%]"
-      :model-value="currentMusicInfo.currentTime"
+      :model-value="playProgress"
       :max="sliderMax"
       :step="1"
       size="small"
