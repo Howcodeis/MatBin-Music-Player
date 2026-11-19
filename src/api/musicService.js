@@ -6,19 +6,31 @@
  * 这些函数是 api/reqMusic.js 的上层封装：发请求 + 校验 code + 清洗返回数据。
  * 纯常量与格式化函数在 utils/music.js。
  */
-import { reqMusicList, reqSongDetail, reqSongDetailBatch, reqSongLyric, reqSongUrl, reqSongComment, reqPersonalizedPlaylists, reqRecommendSongs, reqPlaylistInfo, reqPlayListDetail, reqArtistSongs } from "./reqMusic";
-import { parseLrc } from "@/utils/lyric";
-import { toHttps } from "@/utils/music";
+import {
+  reqMusicList,
+  reqSongDetail,
+  reqSongDetailBatch,
+  reqSongLyric,
+  reqSongUrl,
+  reqSongComment,
+  reqPersonalizedPlaylists,
+  reqRecommendSongs,
+  reqPlaylistInfo,
+  reqPlayListDetail,
+  reqArtistSongs
+} from './reqMusic'
+import { parseLrc } from '@/utils/lyric'
+import { toHttps } from '@/utils/music'
 
 /**
  * @Description: 获取音乐路径
  * @param {number} id
  * @returns 音乐数据，主要获取音乐路径
  */
-export const getSongUrl = async (id) => {
+export const getSongUrl = async id => {
   const res = await reqSongUrl(id)
   // code 不是 200 才是真正的接口异常（网络/服务端问题），需要上层提示重试
-  if (res?.code != 200) throw new Error("获取歌曲路径失败")
+  if (res?.code != 200) throw new Error('获取歌曲路径失败')
   // 无版权 / 已下架：接口仍返回 200，但 data 里是 null 或 url 为 null。
   // 这种情况不算出错，返回 null 交给上层按不可播放处理（停播 + 自动跳过），
   // 否则会被当成接口异常，列表里一遇灰色歌曲就停在原地。
@@ -41,9 +53,9 @@ export const getSongUrl = async (id) => {
  * @param {number} id
  * @returns {{ lyric: Array, tlyric: Array }} 原词与官方翻译，均已完成解析
  */
-export const getSongLyric = async (id) => {
+export const getSongLyric = async id => {
   const res = await reqSongLyric(id)
-  if (res?.code != 200) throw new Error("获取歌词失败")
+  if (res?.code != 200) throw new Error('获取歌词失败')
   // 纯音乐、接口降级时 lrc / tlyric 可能为 null，统一兜底成空字符串
   // tlyric 是官方的中文翻译歌词，和原词一样带时间戳
   return {
@@ -57,10 +69,10 @@ export const getSongLyric = async (id) => {
  * @param {number} id
  * @returns 歌曲详情数组
  */
-export const getSongDetails = async (id) => {
+export const getSongDetails = async id => {
   const res = await reqSongDetail(id)
   if (res?.code == 200 && res.songs?.length) return res.songs
-  else throw new Error("获取歌曲详情失败")
+  else throw new Error('获取歌曲详情失败')
 }
 
 /**
@@ -68,12 +80,12 @@ export const getSongDetails = async (id) => {
  * @param {Array<number|string>} ids
  * @returns 歌曲详情数组（含 al.picUrl）
  */
-export const getSongDetailBatch = async (ids) => {
+export const getSongDetailBatch = async ids => {
   const list = Array.isArray(ids) ? ids : [ids]
   if (!list.length) return []
   const res = await reqSongDetailBatch(list)
   if (res?.code == 200 && Array.isArray(res.songs)) return res.songs
-  throw new Error("批量获取歌曲详情失败")
+  throw new Error('批量获取歌曲详情失败')
 }
 
 /**
@@ -85,17 +97,17 @@ export const getSongDetailBatch = async (ids) => {
 export const getMusicList = async (keywords, limit, offset) => {
   const res = await reqMusicList(keywords, limit, offset)
   if (res?.code == 200) return res.result
-  else throw new Error("获取歌曲列表失败")
+  else throw new Error('获取歌曲列表失败')
 }
 
 /**
  * @param {number} id
  * @returns 歌曲评论
  */
-export const getSongComment = async (id) => {
+export const getSongComment = async id => {
   const res = await reqSongComment(id)
   if (res?.code == 200) return res.comments || []
-  else throw new Error("获取歌曲评论失败")
+  else throw new Error('获取歌曲评论失败')
 }
 
 /**
@@ -107,7 +119,7 @@ export const getSongComment = async (id) => {
  */
 export const getArtistSongs = async (id, limit = 30, offset = 0) => {
   const res = await reqArtistSongs(id, limit, offset, 'hot')
-  if (res?.code != 200) throw new Error("获取歌手歌曲失败")
+  if (res?.code != 200) throw new Error('获取歌手歌曲失败')
   const songs = Array.isArray(res.songs) ? res.songs : []
   // 接口返回 more 时以它为准；个别版本不返回，则用「本页是否满额」推断还有没有下一页
   const more = typeof res.more === 'boolean' ? res.more : songs.length >= limit
@@ -122,7 +134,7 @@ export const getArtistSongs = async (id, limit = 30, offset = 0) => {
 export const getPersonalizedPlaylists = async (limit = 30) => {
   const res = await reqPersonalizedPlaylists(limit)
   if (res?.code == 200) return res.result || []
-  throw new Error("获取推荐歌单失败")
+  throw new Error('获取推荐歌单失败')
 }
 
 /**
@@ -132,7 +144,7 @@ export const getPersonalizedPlaylists = async (limit = 30) => {
 export const getDailySongs = async () => {
   const res = await reqRecommendSongs()
   if (res?.code == 200) return res?.data?.dailySongs || []
-  throw new Error("获取每日推荐失败")
+  throw new Error('获取每日推荐失败')
 }
 
 /**
@@ -140,10 +152,10 @@ export const getDailySongs = async () => {
  * @param {number} id 歌单 id
  * @returns 歌单对象（name / coverImgUrl / creator / tags / trackCount / playCount / description）
  */
-export const getPlaylistInfo = async (id) => {
+export const getPlaylistInfo = async id => {
   const res = await reqPlaylistInfo(id)
   if (res?.code == 200 && res.playlist) return res.playlist
-  throw new Error("获取歌单信息失败")
+  throw new Error('获取歌单信息失败')
 }
 
 /**
@@ -157,5 +169,5 @@ export const getPlaylistInfo = async (id) => {
 export const getPlaylistSongs = async (id, limit = 30, offset = 0) => {
   const res = await reqPlayListDetail(id, limit, offset)
   if (res?.code == 200) return res
-  throw new Error("获取歌单歌曲失败")
+  throw new Error('获取歌单歌曲失败')
 }

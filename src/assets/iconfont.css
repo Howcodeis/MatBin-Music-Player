@@ -2,12 +2,9 @@
 @font-face {
   font-family: 'iconfont'; /* Project id 5253021 */
   src:
-    url('//at.alicdn.com/t/c/font_5253021_g61n9on8jts.woff2?t=1794644745962')
-      format('woff2'),
-    url('//at.alicdn.com/t/c/font_5253021_g61n9on8jts.woff?t=1794644745962')
-      format('woff'),
-    url('//at.alicdn.com/t/c/font_5253021_g61n9on8jts.ttf?t=1794644745962')
-      format('truetype');
+    url('//at.alicdn.com/t/c/font_5253021_g61n9on8jts.woff2?t=1794644745962') format('woff2'),
+    url('//at.alicdn.com/t/c/font_5253021_g61n9on8jts.woff?t=1794644745962') format('woff'),
+    url('//at.alicdn.com/t/c/font_5253021_g61n9on8jts.ttf?t=1794644745962') format('truetype');
 }
 
 .iconfont {

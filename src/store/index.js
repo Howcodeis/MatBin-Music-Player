@@ -3,7 +3,7 @@
  * @Date: 2023-11-21 15:32:08
  * @Description: pinia 配置
  */
-import { defineStore } from "pinia"
+import { defineStore } from 'pinia'
 // 请求封装（业务服务层）
 import {
   getMusicList,
@@ -17,17 +17,13 @@ import {
   getPlaylistSongs,
   getArtistSongs,
   getSongDetailBatch
-} from "@/api/musicService"
+} from '@/api/musicService'
 // 常量与纯函数
-import {
-  PLAYMODEL,
-  PLAYTYPE,
-  getNextSong
-} from "@/utils/music"
-import { ref } from "vue"
-import { normalBack } from "../utils/MessageBack"
-import { debouncedLocalStorage } from "../utils/storage"
-import { withTranslation } from "../utils/lyric"
+import { PLAYMODEL, PLAYTYPE, getNextSong } from '@/utils/music'
+import { ref } from 'vue'
+import { normalBack } from '../utils/MessageBack'
+import { debouncedLocalStorage } from '../utils/storage'
+import { withTranslation } from '../utils/lyric'
 
 const audio = new Audio()
 const closeBeforeVolume = ref(0)
@@ -69,28 +65,35 @@ export const musicStatus = defineStore('musicinfo', {
   state: () => ({
     keywords: '', // 搜索
     searchVersion: 0, // 每次新搜索自增，列表页据此把表格滚动复位到顶部
-    playType: PLAYTYPE.SEARCH,// 播放列表
-    playMode: PLAYMODEL[0],// 播放顺序
+    playType: PLAYTYPE.SEARCH, // 播放列表
+    playMode: PLAYMODEL[0], // 播放顺序
     currentMusic: '', // 当前歌曲
-    playList: [],// 音乐列表
-    favorite: [],// 收藏歌单
-    recommendedPlayLists: [],// 推荐歌单（热门歌单页）
-    dailySongs: [],// 每日推荐（发现音乐页）
-    dailySongsDate: '',// 上次成功获取日推的本地日期（YYYY-MM-DD），用于判断跨天
-    playlistSongs: [],// 选中歌单的歌曲
+    playList: [], // 音乐列表
+    favorite: [], // 收藏歌单
+    recommendedPlayLists: [], // 推荐歌单（热门歌单页）
+    dailySongs: [], // 每日推荐（发现音乐页）
+    dailySongsDate: '', // 上次成功获取日推的本地日期（YYYY-MM-DD），用于判断跨天
+    playlistSongs: [], // 选中歌单的歌曲
     playlistInfo: {
-      id: '', name: '', cover: '', creator: '', tags: [], trackCount: 0, playCount: 0, description: ''
-    },// 歌单元信息
-    artistSongs: [],// 歌手热门歌曲
-    artistInfo: { id: '', name: '' },// 当前查看的歌手
+      id: '',
+      name: '',
+      cover: '',
+      creator: '',
+      tags: [],
+      trackCount: 0,
+      playCount: 0,
+      description: ''
+    }, // 歌单元信息
+    artistSongs: [], // 歌手热门歌曲
+    artistInfo: { id: '', name: '' }, // 当前查看的歌手
     volume: 0.5, // 初始播放音量
     isPlay: false, // 是否播放
-    isShowScrollLyrics: false,// 是否展示歌词滚动界面
-    isShowAnimationLyrics: false,// 是否展示歌词特殊界面
+    isShowScrollLyrics: false, // 是否展示歌词滚动界面
+    isShowAnimationLyrics: false, // 是否展示歌词特殊界面
     isTouch: false, // 是否拖动进度条
     isLoadingMusic: false, // 歌曲信息加载状态
     currentMusicInfo: {
-      name: '',// 当前歌曲名
+      name: '', // 当前歌曲名
       id: '', // 当前歌曲id
       url: '', // 音乐链接
       cover: '', // 音乐封面
@@ -109,94 +112,94 @@ export const musicStatus = defineStore('musicinfo', {
       searchOffset: 0,
       playlistOffset: 0,
       artistOffset: 0,
-      isSearchOverCounts: false,// 搜索是否到底
-      isPlaylistOverCounts: false,// 歌单歌曲是否到底
-      isArtistOverCounts: false,// 歌手歌曲是否到底
-    },
+      isSearchOverCounts: false, // 搜索是否到底
+      isPlaylistOverCounts: false, // 歌单歌曲是否到底
+      isArtistOverCounts: false // 歌手歌曲是否到底
+    }
   }),
   // readOnly
   getters: {
-    getKeywords () {
+    getKeywords() {
       return this.keywords
     },
-    getPlayType () {
+    getPlayType() {
       return this.playType
     },
-    getPlayMode () {
+    getPlayMode() {
       return this.playMode
     },
-    getCurrentMusic () {
+    getCurrentMusic() {
       return this.currentMusic
     },
-    getCurrentLyricIndex () {
+    getCurrentLyricIndex() {
       return this.currentMusicInfo.currentLyricIndex
     },
-    getPlayList () {
+    getPlayList() {
       return this.playList
     },
-    getFavorite () {
+    getFavorite() {
       return this.favorite
     },
     /**
      * 判断某首歌是否已在我喜欢里
      * 返回函数形式，调用处直接 isFavorite(id)；收藏列表很小，不做缓存影响不大
      */
-    isFavorite () {
+    isFavorite() {
       return id => this.favorite.some(item => item?.id === id)
     },
-    getCurrentTime () {
+    getCurrentTime() {
       return this.currentMusicInfo.currentTime
     },
-    getDuration () {
+    getDuration() {
       return this.currentMusicInfo.duration
     },
-    getSongComment () {
+    getSongComment() {
       return this.currentMusicInfo.comments
     },
-    getVolume () {
+    getVolume() {
       return this.volume
     },
-    getIsplay () {
+    getIsplay() {
       return this.isPlay
     },
-    getIsShowLyricsPanel () {
+    getIsShowLyricsPanel() {
       return this.isShowScrollLyrics
     },
-    getIsShowSPLyricsPanel () {
+    getIsShowSPLyricsPanel() {
       return this.isShowAnimationLyrics
     },
-    getIsTouch () {
+    getIsTouch() {
       return this.isTouch
     },
-    getCurrentMusicInfo () {
+    getCurrentMusicInfo() {
       return this.currentMusicInfo
     },
-    getSearchSettings () {
+    getSearchSettings() {
       return this.searchSettings
     },
-    getRecommendedPlayLists () {
+    getRecommendedPlayLists() {
       return this.recommendedPlayLists
     },
-    getDailySongs () {
+    getDailySongs() {
       return this.dailySongs
     },
-    getPlaylistSongs () {
+    getPlaylistSongs() {
       return this.playlistSongs
     },
-    getPlaylistInfo () {
+    getPlaylistInfo() {
       return this.playlistInfo
     },
-    getArtistSongs () {
+    getArtistSongs() {
       return this.artistSongs
     },
-    getArtistInfo () {
+    getArtistInfo() {
       return this.artistInfo
-    },
+    }
   },
   // hooks
   actions: {
     // 初始化音乐
-    initAudio () {
+    initAudio() {
       audio.preload = 'auto'
       audio.loop = false
       audio.autoplay = false
@@ -214,25 +217,28 @@ export const musicStatus = defineStore('musicinfo', {
 
       // 节流函数
       const throttle = (func, limit) => {
-        let lastFunc;
-        let lastRan;
+        let lastFunc
+        let lastRan
         return function () {
-          const context = this;
-          const args = arguments;
+          const context = this
+          const args = arguments
           if (!lastRan) {
-            func.apply(context, args);
-            lastRan = Date.now();
+            func.apply(context, args)
+            lastRan = Date.now()
           } else {
-            clearTimeout(lastFunc);
-            lastFunc = setTimeout(() => {
-              if ((Date.now() - lastRan) >= limit) {
-                func.apply(context, args);
-                lastRan = Date.now();
-              }
-            }, limit - (Date.now() - lastRan));
+            clearTimeout(lastFunc)
+            lastFunc = setTimeout(
+              () => {
+                if (Date.now() - lastRan >= limit) {
+                  func.apply(context, args)
+                  lastRan = Date.now()
+                }
+              },
+              limit - (Date.now() - lastRan)
+            )
           }
-        };
-      };
+        }
+      }
 
       audio.ontimeupdate = throttle(() => {
         // duration 还没就绪时所有进度计算都无意义，直接跳过
@@ -240,23 +246,21 @@ export const musicStatus = defineStore('musicinfo', {
 
         // 更新音量（只有变化时才设置）
         if (Math.abs(audio.volume - this.volume) > 0.01) {
-          audio.volume = this.volume;
+          audio.volume = this.volume
         }
 
         // 更新播放状态
-        this.isPlay = !audio.paused;
+        this.isPlay = !audio.paused
 
         // 拖动进度条期间不要用旧时间覆盖用户拖动的位置
         if (!this.isTouch) {
           // 保留小数：歌词动画依赖真实剩余时长，取整会造成最大 1s 的误差
-          this.currentMusicInfo.currentTime = audio.currentTime;
+          this.currentMusicInfo.currentTime = audio.currentTime
         }
 
         // 更新总时长（优先用接口返回的时长，避免流式加载时 duration 为 Infinity）
         const total = this.currentMusic.duration || this.currentMusic.dt
-        const totalSeconds = total
-          ? Math.floor(total / 1000)
-          : Math.floor(audio.duration)
+        const totalSeconds = total ? Math.floor(total / 1000) : Math.floor(audio.duration)
         if (this.currentMusicInfo.duration !== totalSeconds) {
           this.currentMusicInfo.duration = totalSeconds
         }
@@ -265,17 +269,19 @@ export const musicStatus = defineStore('musicinfo', {
         this.syncLyricIndex(audio.currentTime)
 
         // 播放结束，处理下一首
-        if (audio.ended && !switching) this.playNext(true, true);
-      }, 100); // 节流时间间隔，单位毫秒
+        if (audio.ended && !switching) this.playNext(true, true)
+      }, 100) // 节流时间间隔，单位毫秒
     },
     // 根据当前播放时间计算歌词索引（二分查找，前置条件：歌词已按时间升序）
-    syncLyricIndex (currentTime) {
+    syncLyricIndex(currentTime) {
       const lyrics = this.currentMusicInfo.lyric
       // 歌词为空（接口失败/纯音乐）或没有时间轴时直接跳过，避免 "in undefined" 崩溃
       if (!Array.isArray(lyrics) || lyrics.length === 0) return
       if (lyrics[0]?.time == null) return
 
-      let low = 0, high = lyrics.length - 1, mid
+      let low = 0,
+        high = lyrics.length - 1,
+        mid
       while (low <= high) {
         mid = (low + high) >> 1
         if (lyrics[mid].time <= currentTime) low = mid + 1
@@ -288,7 +294,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 当前生效的歌曲列表
-    getActivePlayList () {
+    getActivePlayList() {
       switch (this.playType) {
         case PLAYTYPE.FAVORITE:
           return this.favorite
@@ -303,7 +309,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 上下首播放设置
-    playNext (isPlayNext = false, fromEnded = false) {
+    playNext(isPlayNext = false, fromEnded = false) {
       // 单曲循环 + 自然播放结束：直接重播，不再请求接口
       if (fromEnded && this.playMode === SINGLE_LOOP) {
         return this.replayCurrent()
@@ -318,7 +324,7 @@ export const musicStatus = defineStore('musicinfo', {
       this.setMusicInfo(tempList[nextIndex], { skipForward: isPlayNext })
     },
     // 加入 / 取消我喜欢的音乐
-    toggleFavorite (music) {
+    toggleFavorite(music) {
       if (!music?.id) return
       const index = this.favorite.findIndex(item => item?.id === music.id)
       if (index > -1) {
@@ -329,7 +335,10 @@ export const musicStatus = defineStore('musicinfo', {
         // 旧搜索接口（/search）只返回 album.picId、没有 picUrl，
         // 这里优先取歌曲自带的封面，其次用当前播放详情里的封面兜底，
         // 否则收藏列表会全是默认图。
-        const cover = music.al?.picUrl || music.album?.picUrl || music.cover ||
+        const cover =
+          music.al?.picUrl ||
+          music.album?.picUrl ||
+          music.cover ||
           (music.id === this.currentMusicInfo.id ? this.currentMusicInfo.cover : '')
         // 放最前面，最近收藏的在列表顶部
         this.favorite.unshift({ ...music, cover: cover || '' })
@@ -343,10 +352,10 @@ export const musicStatus = defineStore('musicinfo', {
      * 这里按 id 批量查 /song/detail 补一次，补到后写回对象本身（随 store 持久化），
      * 之后同一首歌不会再出现在 missing 里，也不会重复请求。
      */
-    async fillMissingCovers (list) {
+    async fillMissingCovers(list) {
       if (!Array.isArray(list) || !list.length) return
-      const missing = list.filter(item =>
-        item?.id && !(item.al?.picUrl || item.album?.picUrl || item.cover)
+      const missing = list.filter(
+        item => item?.id && !(item.al?.picUrl || item.album?.picUrl || item.cover)
       )
       if (!missing.length) return
       try {
@@ -365,11 +374,11 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 收藏页：补齐历史收藏的封面
-    async ensureFavoriteCovers () {
+    async ensureFavoriteCovers() {
       return this.fillMissingCovers(this.favorite)
     },
     // 重播当前歌曲（不重新拉地址）
-    replayCurrent () {
+    replayCurrent() {
       if (!audio.src) return this.setMusicInfo(this.currentMusic, { autoplay: true })
       audio.currentTime = 0
       this.isPlay = true
@@ -384,7 +393,7 @@ export const musicStatus = defineStore('musicinfo', {
      * 只把 isPlay 置 false 是不够的：audio.src 上还挂着上一首，
      * 声音会继续放上一首，而封面 / 歌词 / 进度条已经换成这一首，出现音画错位。
      */
-    stopAudio () {
+    stopAudio() {
       try {
         audio.pause()
       } catch (e) {
@@ -411,12 +420,13 @@ export const musicStatus = defineStore('musicinfo', {
      * @param {boolean} skipForward true 往后跳（下一首 / 自然播放结束），false 往前跳（上一首）
      * @param {string} reason 不可播放的原因，用于提示
      */
-    skipUnplayable (skipForward = true, reason = '') {
+    skipUnplayable(skipForward = true, reason = '') {
       this.stopAudio()
       const reasonText = reason || '该歌曲暂无可用播放地址'
       // 列表里没有别的歌可跳（只有这一首 / 列表为空）时，跳过去还是它，直接停下提示
-      const others = (this.getActivePlayList() || [])
-        .filter(item => item?.id != this.currentMusicInfo.id)
+      const others = (this.getActivePlayList() || []).filter(
+        item => item?.id != this.currentMusicInfo.id
+      )
       if (!others.length) {
         normalBack('warning', reasonText)
         return
@@ -437,7 +447,7 @@ export const musicStatus = defineStore('musicinfo', {
       }, 800)
     },
     // 统一构造当前播放信息，避免各处字段兜底逻辑不一致
-    buildMusicInfo (music, { url = '', cover = '', lyric = [], comments = [] } = {}) {
+    buildMusicInfo(music, { url = '', cover = '', lyric = [], comments = [] } = {}) {
       return {
         name: music.name,
         id: music.id,
@@ -449,13 +459,13 @@ export const musicStatus = defineStore('musicinfo', {
         album: music.album?.name || music.al?.name || '',
         currentLyricIndex: -1,
         currentTime: 0,
-        duration: (music.duration || music.dt) ? Math.floor((music.duration || music.dt) / 1000) : 0,
+        duration: music.duration || music.dt ? Math.floor((music.duration || music.dt) / 1000) : 0,
         comments: Array.isArray(comments) ? comments : []
       }
     },
     // 获取歌曲信息 准备播放（后台加载，不再弹全屏遮罩）
-    async setMusicInfo (music, { autoplay = true, resumeAt = 0, skipForward = true } = {}) {
-      if (!music?.id) return;
+    async setMusicInfo(music, { autoplay = true, resumeAt = 0, skipForward = true } = {}) {
+      if (!music?.id) return
 
       // 每次切歌领取一个新序号，旧请求回来时 isStale() 为真，直接丢弃结果
       const seq = ++loadSeq
@@ -472,8 +482,8 @@ export const musicStatus = defineStore('musicinfo', {
          */
         const [urlRet, detailRet] = await Promise.allSettled([
           getSongUrl(music.id),
-          getSongDetails(music.id),
-        ]);
+          getSongDetails(music.id)
+        ])
         if (isStale()) return
 
         if (urlRet.status === 'rejected') {
@@ -482,7 +492,7 @@ export const musicStatus = defineStore('musicinfo', {
           return
         }
         const songUrl = urlRet.value
-        const details = detailRet.status === 'fulfilled' ? (detailRet.value || []) : []
+        const details = detailRet.status === 'fulfilled' ? detailRet.value || [] : []
 
         // 无版权 / 已下架：拿不到地址，歌词和评论也没必要再请求，直接走跳过流程。
         // 注意先把这首歌写进 currentMusicInfo —— 自动跳过要靠它的 id 算索引，
@@ -510,7 +520,7 @@ export const musicStatus = defineStore('musicinfo', {
         }
         if (isStale()) return
 
-        this.currentMusic = music;
+        this.currentMusic = music
         this.currentMusicInfo = this.buildMusicInfo(music, {
           url: songUrl.url,
           cover: details?.[0]?.al?.picUrl,
@@ -543,7 +553,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 加载音频并播放；resumeAt > 0 时从指定位置续播；返回是否真正加载成功
-    async loadAndPlay (url, autoplay = true, resumeAt = 0, seq = loadSeq, skipForward = true) {
+    async loadAndPlay(url, autoplay = true, resumeAt = 0, seq = loadSeq, skipForward = true) {
       const isStale = () => seq !== loadSeq
       if (isStale()) return false
 
@@ -609,12 +619,12 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 重置搜索设置
-    resetSearch () {
+    resetSearch() {
       this.searchSettings.searchOffset = 0
       this.searchSettings.isSearchOverCounts = false
     },
     // 搜索歌曲设置
-    async setMusicList (keywords) {
+    async setMusicList(keywords) {
       // 判断关键字输入状态
       if (!keywords || !String(keywords).trim()) return normalBack('warning', '请输入搜索内容')
       // 重置搜索设置
@@ -633,7 +643,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 搜索列表触底加载
-    async loadMore () {
+    async loadMore() {
       const settings = this.searchSettings
       if (settings.isSearchOverCounts) return
       try {
@@ -651,15 +661,15 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 封装搜索调用
-    async getSearchPlayListSafe (offset = this.searchSettings.searchOffset) {
+    async getSearchPlayListSafe(offset = this.searchSettings.searchOffset) {
       return await getMusicList(this.keywords, this.searchSettings.searchLimit, offset)
     },
     // 封装歌单歌曲调用
-    async getPlaylistSongsSafe (id, offset = this.searchSettings.playlistOffset) {
+    async getPlaylistSongsSafe(id, offset = this.searchSettings.playlistOffset) {
       return await getPlaylistSongs(id, this.searchSettings.playlistLimit, offset)
     },
     // 播放控制
-    async togglePlay () {
+    async togglePlay() {
       if (this.isPlay) {
         audio.pause()
         this.isPlay = false
@@ -667,7 +677,10 @@ export const musicStatus = defineStore('musicinfo', {
       }
       if (!this.currentMusicInfo.url) {
         // 有歌名说明是这首歌不可播，没歌名就是还没点过任何歌曲
-        return normalBack('info', this.currentMusicInfo.name ? '这首歌暂无可用播放地址' : '暂无歌曲')
+        return normalBack(
+          'info',
+          this.currentMusicInfo.name ? '这首歌暂无可用播放地址' : '暂无歌曲'
+        )
       }
       // 浏览器里还挂着有效音源时直接恢复，避免重新拉流
       if (audio.src && audio.paused) {
@@ -688,21 +701,21 @@ export const musicStatus = defineStore('musicinfo', {
       })
     },
     // 音量控制
-    setVolume (value) {
+    setVolume(value) {
       this.volume = value
       audio.volume = value
     },
     // 音量控制 关闭
-    stepCloseVolume () {
+    stepCloseVolume() {
       closeBeforeVolume.value = this.volume || 0.5
       this.setVolume(0)
     },
     // 音量控制 打开
-    stepOpenVolume () {
+    stepOpenVolume() {
       this.setVolume(closeBeforeVolume.value || 0.5)
     },
     // 点击歌词跳转
-    skipByLyric (time) {
+    skipByLyric(time) {
       // 纯文本歌词的 time 为 null，点击不应该跳到 0
       if (time == null || !Number.isFinite(time)) return
       audio.currentTime = time
@@ -715,18 +728,18 @@ export const musicStatus = defineStore('musicinfo', {
      * 的 @input 会被误判成用户开始拖动，而这次 emit 没有配套的 @change，isTouch 就会永久卡在
      * true，之后所有 timeupdate 都跳过进度写入，进度条冻结但歌照常播。
      */
-    setProgress (time) {
+    setProgress(time) {
       const value = Number(time)
       if (Number.isFinite(value)) {
         this.currentMusicInfo.currentTime = Math.max(0, value)
       }
     },
     // 仅在真实指针按下/抬起时维护拖动标记，彻底绕开 el-slider 的 @input 误报
-    setDragging (val) {
+    setDragging(val) {
       this.isTouch = Boolean(val)
     },
     // 拖动结束：松手才真正 seek，避免边拖边跳造成音频断续
-    setProgressDone (time) {
+    setProgressDone(time) {
       const value = Number(time)
       const target = Number.isFinite(value)
         ? Math.max(0, value)
@@ -744,7 +757,7 @@ export const musicStatus = defineStore('musicinfo', {
       this.isTouch = false
     },
     // 推荐歌单（热门歌单页）
-    async setRecommendedPlayLists () {
+    async setRecommendedPlayLists() {
       try {
         this.recommendedPlayLists = await getPersonalizedPlaylists(30)
       } catch (error) {
@@ -753,7 +766,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 每日推荐（发现音乐页）
-    async setDailySongs () {
+    async setDailySongs() {
       try {
         this.dailySongs = await getDailySongs()
         // 记下这份推荐属于哪一天，第二天进来才能判断该不该重拉
@@ -769,18 +782,27 @@ export const musicStatus = defineStore('musicinfo', {
      * 用日期比较而不是定时器 —— 用户关掉页面再打开也能正确刷新，
      * 而且不需要在页面里挂一个跨夜的 setTimeout。
      */
-    needRefreshDaily () {
+    needRefreshDaily() {
       return !this.dailySongs.length || this.dailySongsDate !== todayKey()
     },
     // 歌单详情：元信息 + 第一页歌曲
-    async setPlaylistDetail (id) {
+    async setPlaylistDetail(id) {
       if (!id) return normalBack('warning', '歌单不存在')
       const settings = this.searchSettings
       settings.playlistOffset = 0
       settings.isPlaylistOverCounts = false
       // 先清空，避免切换歌单时短暂显示上一个歌单的歌曲
       this.playlistSongs = []
-      this.playlistInfo = { id, name: '', cover: '', creator: '', tags: [], trackCount: 0, playCount: 0, description: '' }
+      this.playlistInfo = {
+        id,
+        name: '',
+        cover: '',
+        creator: '',
+        tags: [],
+        trackCount: 0,
+        playCount: 0,
+        description: ''
+      }
       // 元信息和歌曲互不依赖，并发请求；任一失败不影响另一个
       const [info, songRes] = await Promise.all([
         getPlaylistInfo(id).catch(() => null),
@@ -788,16 +810,25 @@ export const musicStatus = defineStore('musicinfo', {
       ])
       this.playlistInfo = info
         ? {
-          id,
-          name: info.name || '',
-          cover: info.coverImgUrl || '',
-          creator: info.creator?.nickname || '',
-          tags: Array.isArray(info.tags) ? info.tags : [],
-          trackCount: Number(info.trackCount) || 0,
-          playCount: Number(info.playCount) || 0,
-          description: info.description || ''
-        }
-        : { id, name: '', cover: '', creator: '', tags: [], trackCount: 0, playCount: 0, description: '' }
+            id,
+            name: info.name || '',
+            cover: info.coverImgUrl || '',
+            creator: info.creator?.nickname || '',
+            tags: Array.isArray(info.tags) ? info.tags : [],
+            trackCount: Number(info.trackCount) || 0,
+            playCount: Number(info.playCount) || 0,
+            description: info.description || ''
+          }
+        : {
+            id,
+            name: '',
+            cover: '',
+            creator: '',
+            tags: [],
+            trackCount: 0,
+            playCount: 0,
+            description: ''
+          }
 
       if (!songRes) {
         this.playlistSongs = []
@@ -811,7 +842,7 @@ export const musicStatus = defineStore('musicinfo', {
       if (songs.length < settings.playlistLimit) settings.isPlaylistOverCounts = true
     },
     // 歌单歌曲触底加载
-    async loadMorePlaylist () {
+    async loadMorePlaylist() {
       const settings = this.searchSettings
       if (settings.isPlaylistOverCounts) return
       if (!this.playlistInfo.id) return
@@ -832,7 +863,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 歌手热门歌曲：重置分页并加载第一页
-    async setArtistSongs (artist) {
+    async setArtistSongs(artist) {
       const id = artist?.id
       if (!id) return normalBack('warning', '暂无法获取该歌手信息')
       const settings = this.searchSettings
@@ -852,7 +883,7 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 歌手热门歌曲：触底加载下一页
-    async loadMoreArtist () {
+    async loadMoreArtist() {
       const settings = this.searchSettings
       if (settings.isArtistOverCounts) return
       if (!this.artistInfo.id) return
@@ -874,9 +905,9 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 封装歌手歌曲调用
-    async getArtistSongsSafe (id, offset = this.searchSettings.artistOffset) {
+    async getArtistSongsSafe(id, offset = this.searchSettings.artistOffset) {
       return await getArtistSongs(id, this.searchSettings.artistLimit, offset)
-    },
+    }
   },
   // 持久化存储
   persist: {

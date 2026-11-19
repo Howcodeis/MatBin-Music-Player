@@ -17,7 +17,7 @@ const toSeconds = (minute, second, fraction) => {
 }
 
 // 解析单行，返回该行上的所有时间点（可能为空数组）
-const parseLine = (line) => {
+const parseLine = line => {
   if (!line) return []
   const timestamps = []
   for (const match of line.matchAll(TIME_TAG)) {
@@ -36,7 +36,7 @@ const parseLine = (line) => {
  *   - 有时间轴：按时间升序、同时间同文本去重
  *   - 无时间轴（纯文本歌词）：time 全部为 null
  */
-export function parseLrc (raw) {
+export function parseLrc(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return []
 
   const offsetMatch = raw.match(OFFSET_TAG)
@@ -46,7 +46,8 @@ export function parseLrc (raw) {
 
   // 完全没有时间标签：当作纯文本歌词
   if (lines.length === 0) {
-    return raw.split('\n')
+    return raw
+      .split('\n')
       .map(line => line.trim())
       .filter(Boolean)
       .map(word => ({ time: null, word }))
@@ -75,7 +76,7 @@ export function parseLrc (raw) {
  * @param {number} tolerance 允许的时间偏差，单位秒
  * @returns {Array} 新数组，匹配上的行带 tword 字段
  */
-export function withTranslation (lyric, tlyric, tolerance = 0.6) {
+export function withTranslation(lyric, tlyric, tolerance = 0.6) {
   if (!Array.isArray(lyric) || lyric.length === 0) return []
   if (!Array.isArray(tlyric) || tlyric.length === 0) return lyric
 

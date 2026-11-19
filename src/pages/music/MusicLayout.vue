@@ -1,10 +1,10 @@
 <script setup>
-import { defineOptions, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import searchBar from './components/searchBar.vue';
-import siderMenu from './components/siderMenu.vue';
-import { useIsMobile } from '@/composables/useResponsive';
-import { drawerOpen, drawerClose, drawerSetClosed, drawerReset } from '@/utils/gsapTools';
+import { defineOptions, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import searchBar from './components/searchBar.vue'
+import siderMenu from './components/siderMenu.vue'
+import { useIsMobile } from '@/composables/useResponsive'
+import { drawerOpen, drawerClose, drawerSetClosed, drawerReset } from '@/utils/gsapTools'
 
 defineOptions({
   name: 'MusicLayout'
@@ -24,9 +24,8 @@ const stopTransition = router.afterEach((to, from) => {
   }
   const toDepth = to.meta.depth ?? 0
   const fromDepth = from.meta.depth ?? 0
-  pageTransition.value = toDepth > fromDepth
-    ? 'slide-forward'
-    : toDepth < fromDepth ? 'slide-back' : 'fade-tag'
+  pageTransition.value =
+    toDepth > fromDepth ? 'slide-forward' : toDepth < fromDepth ? 'slide-back' : 'fade-tag'
 })
 onUnmounted(stopTransition)
 
@@ -58,19 +57,27 @@ const syncDrawer = (animate = false) => {
 }
 
 // 展开/收起：带 GSAP 动画
-watch(isShowSiderMenu, async open => {
-  if (!isMobile.value) return
-  // 等 DOM（遮罩可能刚挂载）就绪再播放
-  await nextTick()
-  if (open) drawerOpen(drawerRef.value, maskRef.value)
-  else drawerClose(drawerRef.value, maskRef.value)
-}, { flush: 'post' })
+watch(
+  isShowSiderMenu,
+  async open => {
+    if (!isMobile.value) return
+    // 等 DOM（遮罩可能刚挂载）就绪再播放
+    await nextTick()
+    if (open) drawerOpen(drawerRef.value, maskRef.value)
+    else drawerClose(drawerRef.value, maskRef.value)
+  },
+  { flush: 'post' }
+)
 
 // 断点切换：宽屏收起状态并复位，窄屏保持关闭
-watch(isMobile, mobile => {
-  if (!mobile) isShowSiderMenu.value = false
-  nextTick(() => syncDrawer(false))
-}, { flush: 'post' })
+watch(
+  isMobile,
+  mobile => {
+    if (!mobile) isShowSiderMenu.value = false
+    nextTick(() => syncDrawer(false))
+  },
+  { flush: 'post' }
+)
 
 onMounted(() => {
   nextTick(() => syncDrawer(false))
@@ -78,9 +85,12 @@ onMounted(() => {
 
 // 移动端点击菜单项跳转后自动收起
 const route = useRoute()
-watch(() => route.fullPath, () => {
-  if (isMobile.value) closeSiderMenu()
-})
+watch(
+  () => route.fullPath,
+  () => {
+    if (isMobile.value) closeSiderMenu()
+  }
+)
 </script>
 
 <template>
@@ -90,22 +100,30 @@ watch(() => route.fullPath, () => {
   <!-- 侧栏：宽屏常驻，窄屏为覆盖式抽屉 -->
   <aside ref="drawerRef" class="sider-panel" :class="{ 'sider-panel--drawer': isMobile }">
     <!-- 侧栏收起按钮 -->
-    <button v-if="isMobile" class="sider-close" title="收起菜单" aria-label="收起菜单" @click="closeSiderMenu">
+    <button
+      v-if="isMobile"
+      class="sider-close"
+      title="收起菜单"
+      aria-label="收起菜单"
+      @click="closeSiderMenu"
+    >
       <i class="iconfont icon-xiangzuo"></i>
     </button>
     <siderMenu />
   </aside>
 
   <div class="relative w-full h-full min-w-0">
-    <div class='relative border-b-[1px] border-gradient flex items-center h-[10%] right-0 min-h-[3.125rem] z-10'>
+    <div
+      class="relative border-b-[1px] border-gradient flex items-center h-[10%] right-0 min-h-[3.125rem] z-10"
+    >
       <searchBar></searchBar>
     </div>
-    <div class='relative overflow-scroll h-[90%]'>
+    <div class="relative overflow-scroll h-[90%]">
       <!-- 播放列表路由：缓存子页面，切标签不重新挂载；详情页滑动切换，平级页淡变 -->
-      <router-view v-slot="{ Component, route }">
+      <router-view v-slot="{ Component, route: childRoute }">
         <Transition :name="pageTransition">
           <KeepAlive :max="6">
-            <component :is="Component" :key="route.fullPath" />
+            <component :is="Component" :key="childRoute.fullPath" />
           </KeepAlive>
         </Transition>
       </router-view>
@@ -122,11 +140,15 @@ watch(() => route.fullPath, () => {
 .slide-forward-enter-active {
   transition: transform 0.28s ease;
   z-index: 2;
+  will-change: transform;
 }
 
 .slide-forward-leave-active {
-  transition: transform 0.28s ease, opacity 0.28s ease;
+  transition:
+    transform 0.28s ease,
+    opacity 0.28s ease;
   z-index: 1;
+  will-change: transform, opacity;
 }
 
 .slide-forward-leave-to {
@@ -141,13 +163,17 @@ watch(() => route.fullPath, () => {
 }
 
 .slide-back-enter-active {
-  transition: transform 0.28s ease, opacity 0.28s ease;
+  transition:
+    transform 0.28s ease,
+    opacity 0.28s ease;
   z-index: 1;
+  will-change: transform, opacity;
 }
 
 .slide-back-leave-active {
   transition: transform 0.28s ease;
   z-index: 2;
+  will-change: transform;
 }
 
 .slide-back-leave-to {
@@ -163,6 +189,7 @@ watch(() => route.fullPath, () => {
 .fade-tag-enter-active,
 .fade-tag-leave-active {
   transition: opacity 0.5s ease;
+  will-change: opacity;
 }
 
 .border-gradient {
@@ -222,7 +249,9 @@ watch(() => route.fullPath, () => {
     border-radius: 9999px;
     color: #99ccff;
     background: rgba(255, 255, 255, 0.08);
-    transition: background 0.2s ease, color 0.2s ease;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease;
   }
 
   .sider-close:hover {

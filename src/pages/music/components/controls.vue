@@ -1,19 +1,20 @@
 <script setup>
-import { musicStatus } from '@/store';
-import { storeToRefs } from 'pinia';
-import { timeFormat, PLAYMODEL, PLAYTYPE, toThumb } from '@/utils/music';
-import { computed, defineOptions, onMounted, onUnmounted, ref, watch } from 'vue';
-import defaultCover from '@/assets/image/109951173012411790.jpg';
-import { useCanHover } from '@/composables/useResponsive';
-import { normalBack } from '@/utils/MessageBack';
-import ArtistLinks from './artistLinks.vue';
+import { musicStatus } from '@/store'
+import { storeToRefs } from 'pinia'
+import { timeFormat, PLAYMODEL, PLAYTYPE, toThumb } from '@/utils/music'
+import { computed, defineOptions, onMounted, onUnmounted, ref, watch } from 'vue'
+import defaultCover from '@/assets/image/109951173012411790.jpg'
+import { useCanHover } from '@/composables/useResponsive'
+import { normalBack } from '@/utils/MessageBack'
+import ArtistLinks from './artistLinks.vue'
 
 defineOptions({
   name: 'MusicControl'
 })
 
 const store = musicStatus()
-const { getIsplay, volume, currentMusicInfo, playMode, isTouch, currentMusic, playType } = storeToRefs(store)
+const { getIsplay, volume, currentMusicInfo, playMode, isTouch, currentMusic, playType } =
+  storeToRefs(store)
 
 defineProps({
   toggleLyricBoard: Function
@@ -74,10 +75,10 @@ const dragTipStyle = computed(() => {
  * 不用 v-model 直接写 store，是为了保证 isTouch 一定先于时间写入，
  * 否则高频 timeupdate 可能把拖动的位置覆盖掉。
  */
-const onProgressInput = (time) => {
+const onProgressInput = time => {
   store.setProgress(time)
 }
-const onProgressChange = (time) => {
+const onProgressChange = time => {
   store.setProgressDone(time)
 }
 /*
@@ -93,10 +94,13 @@ const onProgressPointerUp = () => store.setDragging(false)
 const artistsText = computed(() => {
   const artists = currentMusicInfo.value.artists
   if (!Array.isArray(artists) || artists.length === 0) return '暂无歌手'
-  return artists.map(item => item?.name).filter(Boolean).join(' / ')
+  return artists
+    .map(item => item?.name)
+    .filter(Boolean)
+    .join(' / ')
 })
 
-const onVolumeChange = (value) => {
+const onVolumeChange = value => {
   // audio.volume 只接受 0~1，超范围浏览器会抛 DOMException，这里统一收口
   const v = Number(value)
   // 直接同步到 audio.volume，避免暂停时拖音量要等到下一次 timeupdate 才生效
@@ -107,17 +111,17 @@ const onVolumeChange = (value) => {
 const controlBarRef = ref(null)
 const activePanel = ref('') // '' | 'volume' | 'playlist'
 
-const togglePanel = (name) => {
+const togglePanel = name => {
   activePanel.value = activePanel.value === name ? '' : name
 }
 const closePanel = () => {
   activePanel.value = ''
 }
-const onDocPointerDown = (event) => {
+const onDocPointerDown = event => {
   // 点到控制栏以外就收起；弹层本身在控制栏内部，不会误关
   if (!controlBarRef.value?.contains(event.target)) closePanel()
 }
-const onKeydown = (event) => {
+const onKeydown = event => {
   if (event.key === 'Escape') closePanel()
 }
 onMounted(() => {
@@ -135,9 +139,9 @@ onUnmounted(() => {
 /* ---------------- 圆形音量旋钮（沿圆周旋转拖动） ---------------- */
 const knobRef = ref(null)
 const KNOB_RADIUS = 40
-const KNOB_CIRC = 2 * Math.PI * KNOB_RADIUS      // 整圆周长 ≈ 251.3
-const KNOB_ARC = KNOB_CIRC * 0.75                 // 只画 270° 的弧 ≈ 188.5
-const START_DEG = 135                             // 弧从左下开始（SVG 角度，顺时针）
+const KNOB_CIRC = 2 * Math.PI * KNOB_RADIUS // 整圆周长 ≈ 251.3
+const KNOB_ARC = KNOB_CIRC * 0.75 // 只画 270° 的弧 ≈ 188.5
+const START_DEG = 135 // 弧从左下开始（SVG 角度，顺时针）
 const SWEEP_DEG = 270
 
 const currentVolume = computed(() => {
@@ -152,38 +156,41 @@ const knobDash = computed(() => `${currentVolume.value * KNOB_ARC} ${KNOB_CIRC}`
  * 有效区间是 135° → 405°（顺时针 270°）；底部 45°~135° 是不画弧的死区，
  * 按离哪一端更近钳到 0 或 1，避免拖过底部时数值乱跳。
  */
-const angleToVolume = (deg) => {
+const angleToVolume = deg => {
   const d = ((deg % 360) + 360) % 360
   let pos
   if (d < 45) pos = d + 360
-  else if (d <= 135) pos = (d - 45) < (135 - d) ? 405 : 135
+  else if (d <= 135) pos = d - 45 < 135 - d ? 405 : 135
   else pos = d
   return Math.min(1, Math.max(0, (pos - START_DEG) / SWEEP_DEG))
 }
 
 let knobDragging = false
-const updateVolumeFromPointer = (event) => {
+const updateVolumeFromPointer = event => {
   const el = knobRef.value
   if (!el) return
   const rect = el.getBoundingClientRect()
-  const deg = Math.atan2(
-    event.clientY - (rect.top + rect.height / 2),
-    event.clientX - (rect.left + rect.width / 2)
-  ) * 180 / Math.PI
+  const deg =
+    (Math.atan2(
+      event.clientY - (rect.top + rect.height / 2),
+      event.clientX - (rect.left + rect.width / 2)
+    ) *
+      180) /
+    Math.PI
   onVolumeChange(Math.round(angleToVolume(deg) * 100) / 100)
 }
-const onKnobDown = (event) => {
+const onKnobDown = event => {
   knobDragging = true
   event.currentTarget.setPointerCapture?.(event.pointerId)
   updateVolumeFromPointer(event)
 }
-const onKnobMove = (event) => {
+const onKnobMove = event => {
   if (knobDragging) updateVolumeFromPointer(event)
 }
 const onKnobUp = () => {
   knobDragging = false
 }
-const onKnobWheel = (event) => {
+const onKnobWheel = event => {
   const delta = event.deltaY > 0 ? -0.05 : 0.05
   onVolumeChange(Math.round((currentVolume.value + delta) * 100) / 100)
 }
@@ -194,19 +201,27 @@ const toggleMute = () => {
 
 /* ---------------- 当前播放列表 ---------------- */
 const activePlayList = computed(() => store.getActivePlayList() || [])
-const activeListName = computed(() => ({
-  [PLAYTYPE.SEARCH]: '搜索列表',
-  [PLAYTYPE.FAVORITE]: '我喜欢的音乐',
-  [PLAYTYPE.HOT]: '歌单',
-  [PLAYTYPE.ARTIST]: '歌手热门',
-  [PLAYTYPE.DAILY]: '每日推荐'
-}[playType.value] || '播放列表'))
+const activeListName = computed(
+  () =>
+    ({
+      [PLAYTYPE.SEARCH]: '搜索列表',
+      [PLAYTYPE.FAVORITE]: '我喜欢的音乐',
+      [PLAYTYPE.HOT]: '歌单',
+      [PLAYTYPE.ARTIST]: '歌手热门',
+      [PLAYTYPE.DAILY]: '每日推荐'
+    })[playType.value] || '播放列表'
+)
 
-const formatRowArtists = (row) => {
+const formatRowArtists = row => {
   const artists = row?.artists || row?.ar || []
-  return Array.isArray(artists) ? artists.map(item => item?.name).filter(Boolean).join(' / ') : ''
+  return Array.isArray(artists)
+    ? artists
+        .map(item => item?.name)
+        .filter(Boolean)
+        .join(' / ')
+    : ''
 }
-const playFromList = (row) => {
+const playFromList = row => {
   // playType 不变，所以上下首仍在这个列表里轮转
   store.setMusicInfo(row)
   closePanel()
@@ -250,9 +265,15 @@ const cyclePlayMode = () => {
   <!-- 歌曲图片信息 -->
   <div class="flex justify-evenly items-center w-[40%] max-md:w-[20%]">
     <!-- 图片 -->
-    <div class="relative overflow-hidden left-1 rounded-2xl border-[1px] border-gray-500 w-[4rem] h-[4rem]"
-      @click="toggleLyricBoard">
-      <img class="cover-img object-cover cursor-pointer w-full h-auto" :src="smallMusicCover" alt="歌曲封面">
+    <div
+      class="relative overflow-hidden left-1 rounded-2xl border-[1px] border-gray-500 w-[4rem] h-[4rem]"
+      @click="toggleLyricBoard"
+    >
+      <img
+        class="cover-img object-cover cursor-pointer w-full h-auto"
+        :src="smallMusicCover"
+        alt="歌曲封面"
+      />
     </div>
     <!-- 歌曲名，歌手艺人名 在移动端上不显示 -->
     <div class="relative w-[55%] left-1 text-white max-md:hidden">
@@ -265,8 +286,13 @@ const cyclePlayMode = () => {
     </div>
   </div>
   <!-- 进度条 -->
-  <div id="audioSchedule" class="absolute w-full overflow-visible flex items-center"
-    @pointerdown.capture="onProgressPointerDown" @mouseenter="handleProgressEnter" @mouseleave="handleProgressLeave">
+  <div
+    id="audioSchedule"
+    class="absolute w-full overflow-visible flex items-center"
+    @pointerdown.capture="onProgressPointerDown"
+    @mouseenter="handleProgressEnter"
+    @mouseleave="handleProgressLeave"
+  >
     <!-- 拖动 / 桌面端悬浮时，跟随进度显示当前时间与总时长 -->
     <Transition name="drag-tip">
       <div v-show="showTimeTip" class="drag-time" :style="dragTipStyle" aria-hidden="true">
@@ -275,8 +301,16 @@ const cyclePlayMode = () => {
         <span class="drag-time__total">{{ timeFormat(currentMusicInfo.duration) }}</span>
       </div>
     </Transition>
-    <el-slider class="absolute w-[98%] left-[1%]" :model-value="currentMusicInfo.currentTime" :max="sliderMax" :step="1"
-      size="small" :show-tooltip="false" @input="onProgressInput" @change="onProgressChange" />
+    <el-slider
+      class="absolute w-[98%] left-[1%]"
+      :model-value="currentMusicInfo.currentTime"
+      :max="sliderMax"
+      :step="1"
+      size="small"
+      :show-tooltip="false"
+      @input="onProgressInput"
+      @change="onProgressChange"
+    />
   </div>
   <!-- 控制栏 -->
   <div ref="controlBarRef" class="flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%]">
@@ -284,11 +318,18 @@ const cyclePlayMode = () => {
     <div class="flex justify-center">
       <div class="flex items-center relative">
         <!-- 收藏当前歌曲 -->
-        <button class="ctl-btn" type="button" :title="isCurrentFavorite ? '取消喜欢' : '加入我喜欢的音乐'"
-          @click="toggleCurrentFavorite">
+        <button
+          class="ctl-btn"
+          type="button"
+          :title="isCurrentFavorite ? '取消喜欢' : '加入我喜欢的音乐'"
+          @click="toggleCurrentFavorite"
+        >
           <Transition name="icon-swap" mode="out-in">
-            <i :key="isCurrentFavorite ? 'fav' : 'unfav'" class="iconfont"
-              :class="isCurrentFavorite ? 'icon-aixin1-copy is-favorite' : 'icon-aixin'"></i>
+            <i
+              :key="isCurrentFavorite ? 'fav' : 'unfav'"
+              class="iconfont"
+              :class="isCurrentFavorite ? 'icon-aixin1-copy is-favorite' : 'icon-aixin'"
+            ></i>
           </Transition>
         </button>
 
@@ -305,10 +346,18 @@ const cyclePlayMode = () => {
         </button>
 
         <!-- 播放 / 暂停 -->
-        <button class="ctl-btn" type="button" :title="getIsplay ? '暂停' : '播放'" @click="musicStatus().togglePlay()">
+        <button
+          class="ctl-btn"
+          type="button"
+          :title="getIsplay ? '暂停' : '播放'"
+          @click="musicStatus().togglePlay()"
+        >
           <Transition name="icon-swap" mode="out-in">
-            <i :key="getIsplay ? 'pause' : 'play'" class="iconfont"
-              :class="getIsplay ? 'icon-zanting' : 'icon-bofang'"></i>
+            <i
+              :key="getIsplay ? 'pause' : 'play'"
+              class="iconfont"
+              :class="getIsplay ? 'icon-zanting' : 'icon-bofang'"
+            ></i>
           </Transition>
         </button>
 
@@ -320,18 +369,46 @@ const cyclePlayMode = () => {
 
       <!-- 音量：圆形旋钮，点在图标上方弹出；窄屏隐藏，手机用系统音量键 -->
       <div class="ctl-pop-anchor volume-anchor">
-        <i class="iconfont" :class="currentVolume > 0 ? 'icon-yinliang' : 'icon-shengyin-jingyin'"
-          :title="`音量 ${volumePercent}%`" @click="togglePanel('volume')"></i>
+        <i
+          class="iconfont"
+          :class="currentVolume > 0 ? 'icon-yinliang' : 'icon-shengyin-jingyin'"
+          :title="`音量 ${volumePercent}%`"
+          @click="togglePanel('volume')"
+        ></i>
         <Transition name="pop">
           <div v-if="activePanel === 'volume'" class="volume-pop">
-            <div ref="knobRef" class="volume-knob" @pointerdown="onKnobDown" @pointermove="onKnobMove"
-              @pointerup="onKnobUp" @pointercancel="onKnobUp" @wheel.prevent="onKnobWheel">
+            <div
+              ref="knobRef"
+              class="volume-knob"
+              @pointerdown="onKnobDown"
+              @pointermove="onKnobMove"
+              @pointerup="onKnobUp"
+              @pointercancel="onKnobUp"
+              @wheel.prevent="onKnobWheel"
+            >
               <svg viewBox="0 0 100 100" aria-hidden="true">
-                <circle class="knob-track" cx="50" cy="50" :r="KNOB_RADIUS" transform="rotate(135 50 50)" />
-                <circle class="knob-value" cx="50" cy="50" :r="KNOB_RADIUS" :stroke-dasharray="knobDash"
-                  transform="rotate(135 50 50)" />
+                <circle
+                  class="knob-track"
+                  cx="50"
+                  cy="50"
+                  :r="KNOB_RADIUS"
+                  transform="rotate(135 50 50)"
+                />
+                <circle
+                  class="knob-value"
+                  cx="50"
+                  cy="50"
+                  :r="KNOB_RADIUS"
+                  :stroke-dasharray="knobDash"
+                  transform="rotate(135 50 50)"
+                />
               </svg>
-              <button class="knob-center" title="静音 / 恢复" @pointerdown.stop @click.stop="toggleMute">
+              <button
+                class="knob-center"
+                title="静音 / 恢复"
+                @pointerdown.stop
+                @click.stop="toggleMute"
+              >
                 {{ volumePercent }}%
               </button>
             </div>
@@ -341,7 +418,11 @@ const cyclePlayMode = () => {
 
       <!-- 当前播放列表：标明列表来源，点一行即切歌 -->
       <div class="ctl-pop-anchor">
-        <i class="iconfont icon-bofangliebiao" :title="`播放列表：${activeListName}`" @click="togglePanel('playlist')"></i>
+        <i
+          class="iconfont icon-bofangliebiao"
+          :title="`播放列表：${activeListName}`"
+          @click="togglePanel('playlist')"
+        ></i>
         <Transition name="pop">
           <div v-if="activePanel === 'playlist'" class="playlist-pop">
             <div class="playlist-head">
@@ -350,10 +431,16 @@ const cyclePlayMode = () => {
             </div>
             <div v-if="!activePlayList.length" class="playlist-empty">列表里还没有歌曲</div>
             <ul v-else class="playlist-items">
-              <li v-for="row in activePlayList" :key="row.id" :class="{ 'is-current': row.id === currentMusicInfo.id }"
-                @click="playFromList(row)">
+              <li
+                v-for="row in activePlayList"
+                :key="row.id"
+                :class="{ 'is-current': row.id === currentMusicInfo.id }"
+                @click="playFromList(row)"
+              >
                 <span class="pl-name" :title="row.name">{{ row.name }}</span>
-                <span class="pl-artist" :title="formatRowArtists(row)">{{ formatRowArtists(row) }}</span>
+                <span class="pl-artist" :title="formatRowArtists(row)">
+                  {{ formatRowArtists(row) }}
+                </span>
               </li>
             </ul>
           </div>
@@ -380,7 +467,9 @@ const cyclePlayMode = () => {
 
 .iconfont {
   @apply text-[#ffffff] cursor-pointer text-2xl;
-  transition: transform 0.16s ease, color 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    color 0.16s ease;
 }
 
 /* 触屏点完会一直保持，把收藏状态的颜色盖住。 */
@@ -408,7 +497,9 @@ const cyclePlayMode = () => {
   will-change: transform, background-color;
   background-color: transparent;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.16s ease, background-color 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    background-color 0.16s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -437,7 +528,9 @@ const cyclePlayMode = () => {
    选择器带上 .iconfont 是为了压过它自己的 transition */
 .iconfont.icon-swap-enter-active,
 .iconfont.icon-swap-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
 }
 
 .icon-swap-enter-from,
@@ -446,7 +539,7 @@ const cyclePlayMode = () => {
   transform: scale(0.55);
 }
 
-.ctl-pop-anchor>.iconfont:active {
+.ctl-pop-anchor > .iconfont:active {
   transform: scale(0.9);
 }
 
@@ -484,7 +577,9 @@ const cyclePlayMode = () => {
   will-change: transform, background-color;
   background-color: transparent;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.16s ease, background-color 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    background-color 0.16s ease;
 }
 
 .ctl-pop-anchor .iconfont {
@@ -659,7 +754,6 @@ const cyclePlayMode = () => {
 
 /* 与 max-md 断点对齐：640~767px 也按窄屏处理 */
 @media (max-width: 767.98px) {
-
   /* 手机用系统音量键；写在 scoped 里才能压过 .ctl-pop-anchor 的 display:flex */
   .ctl-pop-anchor.volume-anchor {
     display: none;
@@ -687,20 +781,20 @@ const cyclePlayMode = () => {
 }
 
 :deep(.el-slider__bar) {
-  background: #6699FF;
+  background: #6699ff;
 }
 
 :deep(.el-slider__button) {
   width: 6px;
   height: 6px;
   border: 0;
-  background: #0099FF;
+  background: #0099ff;
 }
 
 :deep(.el-slider):hover .el-slider__button {
   width: 10px;
   height: 10px;
-  background: #0099FF;
+  background: #0099ff;
 }
 
 :deep(.el-progress--line) {
@@ -745,7 +839,9 @@ const cyclePlayMode = () => {
 
 .drag-tip-enter-active,
 .drag-tip-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .drag-tip-enter-from,

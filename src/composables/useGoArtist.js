@@ -7,13 +7,13 @@
 import { useRouter } from 'vue-router'
 import { normalBack } from '@/utils/MessageBack'
 
-export function useGoArtist () {
+export function useGoArtist() {
   const router = useRouter()
 
   /**
    * @param {{ id?: number|string, name?: string }} artist 歌手对象（搜索/歌单详情里的字段都带 id）
    */
-  const goArtist = (artist) => {
+  const goArtist = artist => {
     const id = artist?.id
     if (!id) return normalBack('warning', '暂无法获取该歌手信息')
 
@@ -24,9 +24,12 @@ export function useGoArtist () {
      * - 已经在歌手页里点合作歌手：沿用最初的来源页，不要记成上一个歌手页，
      *   否则连点几个歌手后返回会一层层往回退。
      */
-    const from = current.name === 'artistSongs'
-      ? (typeof current.query.from === 'string' ? current.query.from : '')
-      : current.fullPath
+    const from =
+      current.name === 'artistSongs'
+        ? typeof current.query.from === 'string'
+          ? current.query.from
+          : ''
+        : current.fullPath
 
     router.push({
       name: 'artistSongs',

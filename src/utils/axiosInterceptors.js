@@ -3,9 +3,8 @@
  * @Date: 2023-11-21 13:51:04
  * @Description: 请求配置
  */
-import axios from "axios";
+import axios from 'axios'
 import nProgress from 'nprogress'
-
 
 const HTTP_CONFIG = {
   baseURL: '/api/',
@@ -19,17 +18,17 @@ const HTTP_CONFIG = {
 
 const http = axios.create(HTTP_CONFIG)
 
-const handleRequestStart = (config) => {
+const handleRequestStart = config => {
   nProgress.start()
   return config
 }
 
-const handleRequestError = (error) => {
+const handleRequestError = error => {
   nProgress.done()
   return Promise.reject(error)
 }
 
-const handleResponseSuccess = (response) => {
+const handleResponseSuccess = response => {
   nProgress.done()
   if (response.status === 200) {
     return response.data
@@ -37,7 +36,7 @@ const handleResponseSuccess = (response) => {
   return Promise.reject(response)
 }
 
-const handleResponseError = async (error) => {
+const handleResponseError = async error => {
   nProgress.done()
 
   /*
@@ -56,14 +55,8 @@ const handleResponseError = async (error) => {
 }
 
 // 请求拦截
-http.interceptors.request.use(
-  handleRequestStart,
-  handleRequestError
-)
+http.interceptors.request.use(handleRequestStart, handleRequestError)
 // 响应拦截
-http.interceptors.response.use(
-  handleResponseSuccess,
-  handleResponseError
-)
+http.interceptors.response.use(handleResponseSuccess, handleResponseError)
 
 export default http

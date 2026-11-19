@@ -5,23 +5,23 @@
  * @Description: 音乐播放模式以及播放列表模式
  */
 export const PLAYMODEL = [
-  "LISTLOOP", // 列表循环
-  "RANDOM", // 随机播放
-  "SINGLELOOP" // 单曲循环
+  'LISTLOOP', // 列表循环
+  'RANDOM', // 随机播放
+  'SINGLELOOP' // 单曲循环
 ]
 export const PLAYTYPE = {
-  FAVORITE: "FAVORITE", //收藏歌单
-  SEARCH: "SEARCH", // 搜索歌单
-  HOT: "HOT", // 歌单详情
-  ARTIST: "ARTIST", // 歌手热门
-  DAILY: "DAILY", // 每日推荐
+  FAVORITE: 'FAVORITE', //收藏歌单
+  SEARCH: 'SEARCH', // 搜索歌单
+  HOT: 'HOT', // 歌单详情
+  ARTIST: 'ARTIST', // 歌手热门
+  DAILY: 'DAILY' // 每日推荐
 }
 
 /**
  * 播放量/收藏数格式化：1.2万、3.4亿
  * 用于歌单卡片和详情头部，避免一长串数字占位置
  */
-export const formatCount = (count) => {
+export const formatCount = count => {
   const n = Number(count)
   if (!Number.isFinite(n) || n < 0) return '0'
   const trim = v => v.toFixed(1).replace(/\.0$/, '')
@@ -34,7 +34,7 @@ export const formatCount = (count) => {
  * 网易云图床在部分接口里返回 http://，https 部署会被混合内容拦截；
  * 同一路径 https 可访问，这里统一升级。
  */
-export const toHttps = (url) => String(url || '').replace(/^http:\/\//i, 'https://')
+export const toHttps = url => String(url || '').replace(/^http:\/\//i, 'https://')
 
 /*
  * @Description: 随机播放状态值
@@ -87,7 +87,7 @@ export const getNextSong = (tempList, playMode, isPlayNext, currentMusicInfo) =>
   if (!Array.isArray(tempList) || tempList.length === 0) return -1
   let index = tempList.findIndex(item => item?.id == currentMusicInfo?.id)
   let len = tempList.length
-  if (playMode === "RANDOM") {
+  if (playMode === 'RANDOM') {
     return randomPlay(index, len)
   } else {
     return listPlay(index, len, isPlayNext)
@@ -97,14 +97,14 @@ export const getNextSong = (tempList, playMode, isPlayNext, currentMusicInfo) =>
 /*
  * @Description: 播放时间和总时间
  */
-export const timeFormat = (time) => {
+export const timeFormat = time => {
   // 非法输入（NaN / Infinity / 负数）统一回退，避免出现 "NaN:NaN"
   if (!Number.isFinite(time) || time < 0) return '00:00'
   let minute = Math.floor(time / 60),
-    second = Math.floor(time) - minute * 60;
-  if (minute <= 9) minute = `0${minute}`;
-  if (second <= 9) second = `0${second}`;
-  return minute + ":" + second;
+    second = Math.floor(time) - minute * 60
+  if (minute <= 9) minute = `0${minute}`
+  if (second <= 9) second = `0${second}`
+  return minute + ':' + second
 }
 
 /*
@@ -119,7 +119,7 @@ export const PercentageOfProgress = (currentTime, duration) => {
 /*
  * @Description: 播放时间
  */
-export const TimeOfProgress = (currentTime) => {
+export const TimeOfProgress = currentTime => {
   return timeFormat(currentTime)
 }
 

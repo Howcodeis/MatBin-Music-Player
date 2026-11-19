@@ -13,7 +13,7 @@ const saved = new Map()
  * @param {string} key 页面标识
  * @param {HTMLElement|null} scroller 滚动容器
  */
-export function saveScroll (key, scroller) {
+export function saveScroll(key, scroller) {
   if (!scroller) return
   saved.set(key, scroller.scrollTop)
 }
@@ -23,7 +23,7 @@ export function saveScroll (key, scroller) {
  * @param {string} key 页面标识
  * @returns {number}
  */
-export function takeScroll (key) {
+export function takeScroll(key) {
   const top = saved.get(key) || 0
   saved.delete(key)
   return top
@@ -33,6 +33,6 @@ export function takeScroll (key) {
  * 清除某个页面的滚动记忆（例如去了别的模块，下次不该停在上次位置）
  * @param {string} key 页面标识
  */
-export function clearScroll (key) {
+export function clearScroll(key) {
   saved.delete(key)
 }

@@ -5,7 +5,7 @@
  * 这里只负责歌单卡片墙，点卡片进 playlistDetail 看歌曲。
  * 接口免登录，卡片数据带 playCount / trackCount / copywriter，足够做信息层级。
  */
-import { defineOptions, nextTick, onMounted, ref } from 'vue'
+import { defineOptions, nextTick, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { musicStatus } from '@/store'
@@ -22,36 +22,39 @@ const { recommendedPlayLists } = storeToRefs(musicStatus())
 // 区分还在加载和加载完但没数据，否则接口失败会一直停在骨架屏
 const loading = ref(true)
 
-// 卡片墙的滚动发生在 MusicLayout 的外层容器上，这里向上找到它
 const SCROLL_KEY = 'hotPlayList'
 const wrapRef = ref(null)
-const getScroller = () => {
-  let el = wrapRef.value?.parentElement
-  while (el) {
-    const overflowY = getComputedStyle(el).overflowY
-    if (overflowY === 'auto' || overflowY === 'scroll') return el
-    el = el.parentElement
-  }
-  return null
-}
+// 卡片墙自己就是滚动容器（.hot-wrap 设了 overflow-y: auto）
+const getScroller = () => wrapRef.value
 
 /*
  * 进歌单详情前记住列表滚动位置，返回时恢复；
  * 去别的模块则清掉，避免下次从侧栏进来停在上次的一半位置。
  */
-onBeforeRouteLeave((to) => {
+onBeforeRouteLeave(to => {
   if (to.name === 'playlistDetail') saveScroll(SCROLL_KEY, getScroller())
   else clearScroll(SCROLL_KEY)
 })
 
 const coverOf = item => toHttps(item?.picUrl) || defaultCover
 
-const openPlaylist = (item) => {
+const openPlaylist = item => {
   router.push({
     name: 'playlistDetail',
     params: { id: String(item.id) },
     // 名字放 query 让详情页首屏立刻有标题，真正的元信息仍以接口为准
     query: item.name ? { name: item.name } : {}
+  })
+}
+
+const restoreScroll = async () => {
+  const top = takeScroll(SCROLL_KEY)
+  if (top <= 0) return
+  // 等卡片渲染完、高度稳定后再恢复，否则会被钳到 0
+  await nextTick()
+  requestAnimationFrame(() => {
+    const el = getScroller()
+    if (el) el.scrollTop = top
   })
 }
 
@@ -63,15 +66,16 @@ onMounted(async () => {
     await musicStatus().setRecommendedPlayLists()
     loading.value = false
   }
+})
 
-  // 等卡片渲染完、高度稳定后再恢复滚动位置
-  const top = takeScroll(SCROLL_KEY)
-  if (top <= 0) return
-  await nextTick()
-  requestAnimationFrame(() => {
-    const scroller = getScroller()
-    if (scroller) scroller.scrollTop = top
-  })
+// 页面被 KeepAlive 缓存后 onMounted 不会再跑，从详情页返回靠这个钩子恢复
+let activatedOnce = false
+onActivated(() => {
+  if (!activatedOnce) {
+    activatedOnce = true
+    return
+  }
+  restoreScroll()
 })
 </script>
 
@@ -96,15 +100,23 @@ onMounted(async () => {
     </div>
 
     <!-- 接口失败/无数据：给个明确状态，不要一直卡在骨架屏 -->
-    <div v-else-if="!recommendedPlayLists.length" class="hot-empty">暂时没有推荐歌单，请稍后再试</div>
+    <div v-else-if="!recommendedPlayLists.length" class="hot-empty">
+      暂时没有推荐歌单，请稍后再试
+    </div>
 
     <div v-else class="hot-grid">
-      <article v-for="item in recommendedPlayLists" :key="item.id" class="hot-card" @click="openPlaylist(item)">
+      <article
+        v-for="item in recommendedPlayLists"
+        :key="item.id"
+        class="hot-card"
+        @click="openPlaylist(item)"
+      >
         <div class="hot-cover">
           <img :src="coverOf(item)" alt="" loading="lazy" referrerpolicy="no-referrer" />
           <!-- 播放量角标 -->
           <span class="hot-count" :title="`${item.playCount} 次播放`">
-            <i class="iconfont icon-bofang"></i>{{ formatCount(item.playCount) }}
+            <i class="iconfont icon-bofang"></i>
+            {{ formatCount(item.playCount) }}
           </span>
           <!-- hover 浮现的播放按钮 -->
           <span class="hot-play" aria-hidden="true">
@@ -236,7 +248,9 @@ onMounted(async () => {
   color: #1f2937;
   opacity: 0;
   transform: translateY(4px) scale(0.9);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .hot-card:hover .hot-play {
@@ -306,7 +320,6 @@ onMounted(async () => {
 }
 
 @keyframes hot-pulse {
-
   0%,
   100% {
     opacity: 0.55;

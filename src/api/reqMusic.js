@@ -4,8 +4,7 @@
  * @Description: 音乐请求配置
  */
 
-
-import http from "../utils/axiosInterceptors";
+import http from '../utils/axiosInterceptors'
 
 /*
  * 统一用 params 传参：关键词里出现 & # 空格 等字符时，
@@ -13,12 +12,12 @@ import http from "../utils/axiosInterceptors";
  */
 
 /**
-   * 搜索歌曲
-   * @param {string} keywords 
-   * @param {number} limit
-   * @param {number} offset
-   * @returns music-list
-   */
+ * 搜索歌曲
+ * @param {string} keywords
+ * @param {number} limit
+ * @param {number} offset
+ * @returns music-list
+ */
 export const reqMusicList = (keywords, limit, offset) => {
   // 用 /cloudsearch 而不是 /search，原因：
   // /search 的 album 只返回 picId、没有 picUrl，列表拿不到封面；
@@ -28,16 +27,16 @@ export const reqMusicList = (keywords, limit, offset) => {
 
 /**
  * 获取歌曲资源路径
- * @param {number} id 
+ * @param {number} id
  * @returns music-url
  */
 export const reqSongUrl = id => {
-  return http.get('/song/url', { params: { id, level: 'exhigh' } });
-};
+  return http.get('/song/url', { params: { id, level: 'exhigh' } })
+}
 
 /**
  * 获取歌曲歌词
- * @param {number} id 
+ * @param {number} id
  * @returns music-lyric
  */
 export const reqSongLyric = id => {
@@ -47,7 +46,7 @@ export const reqSongLyric = id => {
 /**
  * 获取歌曲详情
  * 主要是获取封面
- * @param {number} id 
+ * @param {number} id
  * @returns music-imageUrl
  */
 export const reqSongDetail = id => {
@@ -66,9 +65,9 @@ export const reqSongDetailBatch = ids => {
 
 /**
  * 异步请求歌曲评论数据
- * 
+ *
  * 该函数通过HTTP GET请求获取指定歌曲ID的评论数据。
- * 
+ *
  * @param {number} id - 歌曲的ID，用于构建请求URL，识别特定歌曲的评论。
  * @returns {Promise} 返回一个Promise对象，解析后的结果为HTTP请求的响应数据。
  */
@@ -117,7 +116,7 @@ export const reqPlaylistInfo = id => {
 
 /**
  * 获取歌单详情
- * @param {number} id 
+ * @param {number} id
  * @param {number} limit
  * @param {number} offset
  * @returns {Promise} 返回一个Promise对象，解析后的结果为HTTP请求的响应数据。

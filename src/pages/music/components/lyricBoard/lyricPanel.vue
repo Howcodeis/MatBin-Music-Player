@@ -1,6 +1,6 @@
 <script setup>
-import { musicStatus } from '@/store';
-import { storeToRefs } from 'pinia';
+import { musicStatus } from '@/store'
+import { storeToRefs } from 'pinia'
 import { defineOptions, onMounted, onUnmounted, ref, watch } from 'vue'
 
 defineOptions({
@@ -13,7 +13,8 @@ const props = defineProps({
     default: false
   }
 })
-const { currentMusicInfo, getCurrentLyricIndex, getIsShowSPLyricsPanel } = storeToRefs(musicStatus())
+const { currentMusicInfo, getCurrentLyricIndex, getIsShowSPLyricsPanel } =
+  storeToRefs(musicStatus())
 // 歌词面板
 const lyricBoard = ref(null)
 // 歌词偏移量
@@ -46,11 +47,11 @@ watch([getIsShowSPLyricsPanel, () => props.isShowScrollLyrics], () => {
   if (getIsShowSPLyricsPanel.value && props.isShowScrollLyrics) {
     timer = setTimeout(() => {
       lyricMove()
-    }, 500);
+    }, 500)
   }
 })
 // 跳到指定歌词
-const skipLyric = (lyric) => {
+const skipLyric = lyric => {
   musicStatus().skipByLyric(lyric?.time)
 }
 
@@ -61,20 +62,28 @@ onMounted(() => {
   if (getIsShowSPLyricsPanel.value && props.isShowScrollLyrics) {
     timer = setTimeout(() => {
       lyricMove()
-    }, 500);
+    }, 500)
   }
 })
 </script>
 
 <template>
   <!-- 歌词部分 -->
-  <div class=" flex justify-center h-full w-full md:w-[60%] overflow-hidden">
+  <div class="flex justify-center h-full w-full md:w-[60%] overflow-hidden">
     <!-- 文字在模糊背景下滚动导致背景失真，出现块状问题 添加will-change-scroll 解决 -->
-    <ul ref="lyricBoard" class="overflow-y-scroll pt-[12rem] w-[80%] h-full will-change-scroll"
-      @wheel="handleMove" @touchmove="handleMove">
-      <li class="cursor-pointer leading-relaxed my-4 text-center text-slate-400 duration-300 will-change-transform"
-        :class="[index == getCurrentLyricIndex ? 'active' : '']" v-for="(lyric, index) in currentMusicInfo.lyric"
-        :key="index" @click.stop="skipLyric(lyric)">
+    <ul
+      ref="lyricBoard"
+      class="overflow-y-scroll pt-[12rem] w-[80%] h-full will-change-scroll"
+      @wheel="handleMove"
+      @touchmove="handleMove"
+    >
+      <li
+        v-for="(lyric, index) in currentMusicInfo.lyric"
+        :key="index"
+        class="cursor-pointer leading-relaxed my-4 text-center text-slate-400 duration-300 will-change-transform"
+        :class="[index == getCurrentLyricIndex ? 'active' : '']"
+        @click.stop="skipLyric(lyric)"
+      >
         <div>{{ lyric.word }}</div>
         <!-- 官方翻译歌词，只有接口给了 tlyric 才渲染 -->
         <div v-if="lyric.tword" class="tword">{{ lyric.tword }}</div>

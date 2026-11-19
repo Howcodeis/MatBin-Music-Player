@@ -1,19 +1,20 @@
 <script setup>
-import { storeToRefs } from 'pinia';
-import { musicStatus } from '@/store';
-import gsap from "gsap";
+import { storeToRefs } from 'pinia'
+import { musicStatus } from '@/store'
+import gsap from 'gsap'
 import { lyricEnter, lyricLeave, animateToHidden, animateToVisible } from '@/utils/gsapTools'
-import { defineOptions, nextTick, onMounted, onUnmounted, ref, watch, computed } from 'vue';
+import { defineOptions, nextTick, onMounted, onUnmounted, ref, watch, computed } from 'vue'
 import lyricPanel from './lyricPanel.vue'
 import ArtistLinks from '../artistLinks.vue'
-import { normalBack } from '@/utils/MessageBack';
+import { normalBack } from '@/utils/MessageBack'
 
 defineOptions({
   name: 'SoloPage'
 })
 
 // 将store值响应化
-const { currentMusicInfo, getCurrentLyricIndex, getCurrentTime, isShowScrollLyrics } = storeToRefs(musicStatus())
+const { currentMusicInfo, getCurrentLyricIndex, getCurrentTime, isShowScrollLyrics } =
+  storeToRefs(musicStatus())
 
 // 当前歌词 / 上一句歌词：两个元素做交叉淡变，避免同一个节点被复用导致出场动画丢失
 const currentWord = ref('')
@@ -62,18 +63,18 @@ const lyc = ref(null)
 const toggleLyricBoardStyle = () => {
   // 检查边界条件
   if (!AnimationLyric.value || !lyc.value) {
-    return normalBack('warning', "歌词面板切换失败,请检查资源获取是否正常!");
+    return normalBack('warning', '歌词面板切换失败,请检查资源获取是否正常!')
   }
   // 使用闭包来避免潜在的竞态条件
-  const shouldShow = !isShowScrollLyrics.value;
+  const shouldShow = !isShowScrollLyrics.value
   if (shouldShow) {
     animateToHidden(AnimationLyric.value, 1.2, () => {
-      isShowScrollLyrics.value = shouldShow;
+      isShowScrollLyrics.value = shouldShow
       animateToVisible(lyc.value, 0.5)
     })
   } else {
     animateToHidden(lyc.value, 0.5, () => {
-      isShowScrollLyrics.value = shouldShow;
+      isShowScrollLyrics.value = shouldShow
       animateToVisible(AnimationLyric.value, 1.2)
     })
   }
@@ -81,8 +82,8 @@ const toggleLyricBoardStyle = () => {
 const container = ref(null)
 
 /* ---------------- 底部评论气泡 ---------------- */
-const PAGE_SIZE = 6      // 每行 3 个 × 2 行
-const MAX_COMMENTS = 30  // 翻 5 次正好看完
+const PAGE_SIZE = 6 // 每行 3 个 × 2 行
+const MAX_COMMENTS = 30 // 翻 5 次正好看完
 const commentPage = ref(0)
 const commentGrid = ref(null)
 
@@ -92,13 +93,12 @@ const allComments = computed(() => {
   return Array.isArray(list) ? list.slice(0, MAX_COMMENTS) : []
 })
 const totalPages = computed(() => Math.max(1, Math.ceil(allComments.value.length / PAGE_SIZE)))
-const visibleComments = computed(() => allComments.value.slice(
-  commentPage.value * PAGE_SIZE,
-  commentPage.value * PAGE_SIZE + PAGE_SIZE
-))
+const visibleComments = computed(() =>
+  allComments.value.slice(commentPage.value * PAGE_SIZE, commentPage.value * PAGE_SIZE + PAGE_SIZE)
+)
 
 // 点赞数放在评论右侧；超过 999 显示 999+
-const formatLikes = (count) => {
+const formatLikes = count => {
   const n = Number(count)
   if (!Number.isFinite(n) || n < 0) return '0'
   return n > 999 ? '999+' : String(Math.floor(n))
@@ -110,7 +110,8 @@ const refreshComments = () => {
   nextTick(() => {
     if (commentGrid.value?.children.length) {
       // 只动外层 .comment-cell，平行四边形用的 skew 在里层，避免 transform 被覆盖
-      gsap.fromTo(commentGrid.value.children,
+      gsap.fromTo(
+        commentGrid.value.children,
         { autoAlpha: 0, y: 8 },
         { autoAlpha: 1, y: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' }
       )
@@ -119,9 +120,12 @@ const refreshComments = () => {
 }
 
 // 换歌时回到第一批
-watch(() => currentMusicInfo.value.id, () => {
-  commentPage.value = 0
-})
+watch(
+  () => currentMusicInfo.value.id,
+  () => {
+    commentPage.value = 0
+  }
+)
 
 /* ---------------- 评论区折叠 ----------------
  * showComments 控制评论区是否展开；默认展开（箭头向下）。
@@ -129,13 +133,15 @@ watch(() => currentMusicInfo.value.id, () => {
  * 箭头 rotate 180° 变向上。再点一次反向展开。
  */
 const showComments = ref(false)
-const toggleComments = () => { showComments.value = !showComments.value }
+const toggleComments = () => {
+  showComments.value = !showComments.value
+}
 
 onMounted(() => {
   gsap.from(container.value.children, {
     duration: 0.75,
     autoAlpha: 0,
-    y: 20,
+    y: 20
   })
 })
 onUnmounted(() => {
@@ -154,15 +160,16 @@ onUnmounted(() => {
           <!-- 歌手 -->
           <div class="w-full h-[25%] flex-center">
             <div class="w-full text-center">
-              <span class=" text-slate-300 text-xl block">{{ currentMusicInfo.name ||
-                '暂无歌曲' }}</span>
+              <span class="text-slate-300 text-xl block">
+                {{ currentMusicInfo.name || '暂无歌曲' }}
+              </span>
               <span class="text-slate-300 text-sm">
                 <ArtistLinks :artists="currentMusicInfo.artists" />
               </span>
             </div>
           </div>
           <!-- 歌词 -->
-          <div class=" w-full h-[75%] flex-center" ref="AnimationLyric" v-show="!isShowScrollLyrics">
+          <div v-show="!isShowScrollLyrics" ref="AnimationLyric" class="w-full h-[75%] flex-center">
             <div class="relative w-full h-full flex-center" @click="toggleLyricBoardStyle">
               <!-- 上一句：只负责淡出 -->
               <span ref="prevLyricItem" class="lyric-line">
@@ -177,20 +184,40 @@ onUnmounted(() => {
             </div>
           </div>
           <!-- 歌词轮播 -->
-          <div ref="lyc" class="select-none w-full h-[75%] flex-center flex-col pb-1" v-show="isShowScrollLyrics"
-            @click="toggleLyricBoardStyle">
-            <lyricPanel :isShowScrollLyrics="isShowScrollLyrics"></lyricPanel>
+          <div
+            v-show="isShowScrollLyrics"
+            ref="lyc"
+            class="select-none w-full h-[75%] flex-center flex-col pb-1"
+            @click="toggleLyricBoardStyle"
+          >
+            <lyricPanel :is-show-scroll-lyrics="isShowScrollLyrics"></lyricPanel>
           </div>
         </div>
 
         <!-- 折叠控制条：常驻，评论收起后仍在，可随时再展开 -->
         <div class="comment-toggle-bar">
-          <button class="comment-toggle" type="button"
-            :title="showComments ? '收起评论' : '展开评论'" @click="toggleComments">
-            <svg class="chevron" :class="{ up: !showComments }" viewBox="0 0 24 24" width="16" height="16"
-              aria-hidden="true">
-              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round" />
+          <button
+            class="comment-toggle"
+            type="button"
+            :title="showComments ? '收起评论' : '展开评论'"
+            @click="toggleComments"
+          >
+            <svg
+              class="chevron"
+              :class="{ up: !showComments }"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 9l6 6 6-6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
             <span>评论</span>
           </button>
@@ -201,12 +228,19 @@ onUnmounted(() => {
           <div v-if="!allComments.length" class="comment-empty">暂无评论</div>
           <template v-else>
             <div ref="commentGrid" class="comment-grid">
-              <div v-for="(item, index) in visibleComments" :key="item.commentId ?? index" class="comment-cell">
+              <div
+                v-for="(item, index) in visibleComments"
+                :key="item.commentId ?? index"
+                class="comment-cell"
+              >
                 <div class="comment-bubble">
                   <div class="comment-inner">
-                    <p class="comment-text" :title="item.content">{{ item.content || '（空评论）' }}</p>
+                    <p class="comment-text" :title="item.content">
+                      {{ item.content || '（空评论）' }}
+                    </p>
                     <span class="comment-likes" :title="`${item.likedCount || 0} 人点赞`">
-                      <i class="iconfont icon-dianzan"></i>{{ formatLikes(item.likedCount) }}
+                      <i class="iconfont icon-dianzan"></i>
+                      {{ formatLikes(item.likedCount) }}
                     </span>
                   </div>
                 </div>
@@ -224,7 +258,7 @@ onUnmounted(() => {
 
 <style scoped>
 .box {
-  @apply absolute w-full h-full
+  @apply absolute w-full h-full;
 }
 
 .box::-webkit-scrollbar {
@@ -232,7 +266,7 @@ onUnmounted(() => {
 }
 
 .flex-center {
-  @apply flex justify-center items-center
+  @apply flex justify-center items-center;
 }
 
 .lyric-line {
@@ -245,6 +279,9 @@ onUnmounted(() => {
   justify-content: center;
   width: 100%;
   pointer-events: none;
+  /* 提前提层：动画里带 filter，不提层就会每帧重算模糊 */
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
 }
 
 .lyric {
@@ -325,7 +362,9 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.82);
   font-size: 0.78rem;
   cursor: pointer;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .comment-toggle:hover {
@@ -356,7 +395,8 @@ onUnmounted(() => {
   padding: 0.35rem 1rem 0.75rem;
   overflow: hidden;
   /* 收起/展开都靠这条过渡驱动：height 塌缩 + 淡出，歌词块随 flex 重排同步下移 */
-  transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
     min-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.35s ease,
     padding-top 0.45s cubic-bezier(0.4, 0, 0.2, 1),
@@ -470,7 +510,10 @@ onUnmounted(() => {
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.72);
-  transition: color 0.2s ease, background 0.2s ease, transform 0.35s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.35s ease;
 }
 
 .comment-refresh:hover {

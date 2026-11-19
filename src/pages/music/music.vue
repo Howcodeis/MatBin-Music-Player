@@ -1,15 +1,15 @@
 <script setup>
-import { computed, defineOptions, inject, nextTick, provide, ref, watch } from 'vue';
-import { onBeforeRouteLeave, useRoute } from 'vue-router';
-import controls from './components/controls.vue';
-import MusicLayout from './MusicLayout.vue';
-import soloPage from './components/lyricBoard/soloPage.vue';
-import { musicStatus } from '@/store';
-import { storeToRefs } from 'pinia';
-import { normalBack } from '@/utils/MessageBack';
+import { computed, defineOptions, inject, nextTick, provide, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
+import controls from './components/controls.vue'
+import MusicLayout from './MusicLayout.vue'
+import soloPage from './components/lyricBoard/soloPage.vue'
+import { musicStatus } from '@/store'
+import { storeToRefs } from 'pinia'
+import { normalBack } from '@/utils/MessageBack'
 import { PanelShowY, PanelHideY } from '@/utils/gsapTools'
-import { toThumb } from '@/utils/music';
-import defaultCover from '@/assets/image/109951173012411790.jpg';
+import { toThumb } from '@/utils/music'
+import defaultCover from '@/assets/image/109951173012411790.jpg'
 
 defineOptions({
   name: 'MusicPage'
@@ -23,7 +23,7 @@ const closeMusic = inject('closeMusic', null)
  * 回主页时先播完收起动画再放行导航。
  * 路由一变成 /，music 里的子路由就没匹配了，面板会先变空再动。
  */
-onBeforeRouteLeave(async (to) => {
+onBeforeRouteLeave(async to => {
   if (to.name !== 'home' || !closeMusic) return true
   try {
     await closeMusic()
@@ -70,15 +70,18 @@ const toggleLyricBoard = () => {
  * 只在音乐区内部切页时才收；回主页不重置，这样下次进来还是歌词页。
  */
 const route = useRoute()
-watch(() => route.fullPath, (to, from) => {
-  if (!isShowAnimationLyrics.value) return
-  // 只有音乐区内部切页才收起；进出音乐区都保留歌词状态
-  if (!to.startsWith('/music/') || !from.startsWith('/music/')) return
-  PanelHideY(soloItem.value, 200, () => {
-    isShowAnimationLyrics.value = false
-    PanelShowY(listPage.value, 0, 0)
-  })
-})
+watch(
+  () => route.fullPath,
+  (to, from) => {
+    if (!isShowAnimationLyrics.value) return
+    // 只有音乐区内部切页才收起；进出音乐区都保留歌词状态
+    if (!to.startsWith('/music/') || !from.startsWith('/music/')) return
+    PanelHideY(soloItem.value, 200, () => {
+      isShowAnimationLyrics.value = false
+      PanelShowY(listPage.value, 0, 0)
+    })
+  }
+)
 
 // 封面路径
 const musicCoverPath = computed(() => {
@@ -91,7 +94,7 @@ const musicCoverPath = computed(() => {
  */
 const displayCover = ref(toThumb(musicCoverPath.value, 100))
 let coverSeq = 0
-watch(musicCoverPath, (url) => {
+watch(musicCoverPath, url => {
   if (!url || url === displayCover.value) return
   const seq = ++coverSeq
   const thumb = toThumb(url, 100)
@@ -104,57 +107,72 @@ watch(musicCoverPath, (url) => {
   }
   preload.src = thumb
 })
-
-
 </script>
 
 <template>
   <!-- 整个音乐界面 包括空白 -->
   <div
-    class="flex box-border will-change-scroll absolute w-full h-full min-h-[40rem] justify-center items-center max-md:min-h-0 max-md:items-end">
+    class="flex box-border will-change-scroll absolute w-full h-full min-h-[40rem] justify-center items-center max-md:min-h-0 max-md:items-end"
+  >
     <!-- 音乐展示界面 不包括空白-->
     <div
-      class="box-border border bg-black/50 rounded-3xl absolute min-h-[660px] duration-200 overflow-hidden w-[70%] h-2/3 flex max-md:min-h-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[80%] max-w-[1000px]">
+      class="box-border border bg-black/50 rounded-3xl absolute min-h-[660px] duration-200 overflow-hidden w-[70%] h-2/3 flex max-md:min-h-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[80%] max-w-[1000px]"
+    >
       <!--背景封面：切歌时新旧两张图交叉淡变。scale-105 让 blur 的虚边落到裁剪线外，不会在边上露底色。-->
       <Transition name="bg-fade">
-        <img :key="displayCover"
-          class="absolute inset-0 w-full h-full object-cover object-center brightness-50 blur-md transform-gpu scale-105"
-          :src="displayCover" alt="">
+        <img
+          :key="displayCover"
+          class="absolute inset-0 w-full h-full object-cover object-center brightness-50 blur-md transform-gpu scale-105 will-change-[filter]"
+          :src="displayCover"
+          alt=""
+        />
       </Transition>
       <!-- 列表和控件页面 -->
       <div class="w-full h-full">
         <!--列表展示以及侧栏部分-->
-        <div ref="listPage" v-show="!isShowAnimationLyrics"
-          class=" absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] flex">
+        <div
+          v-show="!isShowAnimationLyrics"
+          ref="listPage"
+          class="absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] flex"
+        >
           <!-- 音乐列表以及搜索 -->
           <div class="relative w-full h-full flex">
             <MusicLayout />
           </div>
         </div>
         <!-- 主奏页面 -->
-        <div ref="soloItem" v-if="isShowAnimationLyrics"
-          class="box-border absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] z-10">
+        <div
+          v-if="isShowAnimationLyrics"
+          ref="soloItem"
+          class="box-border absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] z-10"
+        >
           <!-- 切换按钮 -->
-          <div @click="toggleLyricBoard"
-            class='absolute top-2 left-2 w-9 h-9 text-center z-10 text-white leading-8 hover:translate-y-2 duration-200'>
+          <div
+            class="absolute top-2 left-2 w-9 h-9 text-center z-10 text-white leading-8 hover:translate-y-2 duration-200"
+            @click="toggleLyricBoard"
+          >
             <i class="iconfont icon-xiangxiajiantou" />
           </div>
-          <div @click="$router.push('/')" class="absolute top-2 right-2 w-9 h-9 text-center z-10 text-white leading-8">
+          <div
+            class="absolute top-2 right-2 w-9 h-9 text-center z-10 text-white leading-8"
+            @click="$router.push('/')"
+          >
             <i class="iconfont icon-home" />
           </div>
           <soloPage></soloPage>
         </div>
         <!--控件部分-->
-        <div class="absolute w-full h-[15%] max-md:h-[104px] border-gradient text-[#000000] bottom-0 z-20">
+        <div
+          class="absolute w-full h-[15%] max-md:h-[104px] border-gradient text-[#000000] bottom-0 z-20"
+        >
           <!-- 控键 -->
-          <div class="relative bottom-0 flex w-full h-full select-none ">
-            <controls :toggleLyricBoard="toggleLyricBoard" />
+          <div class="relative bottom-0 flex w-full h-full select-none">
+            <controls :toggle-lyric-board="toggleLyricBoard" />
           </div>
         </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <style scoped>
@@ -184,6 +202,6 @@ watch(musicCoverPath, (url) => {
 
 .bg-fade-enter-from,
 .bg-fade-leave-to {
-  opacity: 0;
+  opacity: 0.5;
 }
 </style>

@@ -29,10 +29,10 @@ const flush = key => {
 }
 
 export const debouncedLocalStorage = {
-  getItem (key) {
+  getItem(key) {
     return localStorage.getItem(key)
   },
-  setItem (key, value) {
+  setItem(key, value) {
     const item = pending.get(key)
     if (item) clearTimeout(item.timer)
     pending.set(key, {
@@ -40,7 +40,7 @@ export const debouncedLocalStorage = {
       timer: setTimeout(() => flush(key), DEBOUNCE_MS)
     })
   },
-  removeItem (key) {
+  removeItem(key) {
     const item = pending.get(key)
     if (item) clearTimeout(item.timer)
     pending.delete(key)

@@ -5,7 +5,7 @@
  *   - 搜索、歌单详情、歌手歌曲：al.picUrl
  *   - 收藏里可能来自搜索结果：album.picUrl
  *   - 当前播放信息：cover
- * 任一字段缺失或图片加载失败，都回退到默认封面   
+ * 任一字段缺失或图片加载失败，都回退到默认封面
  */
 import { computed, ref, watch } from 'vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
@@ -44,8 +44,15 @@ watch(src, () => {
 
 <template>
   <div class="song-cell">
-    <img class="song-cover" :src="finalSrc" :style="{ width: coverSize + 'px', height: coverSize + 'px' }"
-      alt="" loading="lazy" referrerpolicy="no-referrer" @error="failed = true" />
+    <img
+      class="song-cover"
+      :src="finalSrc"
+      :style="{ width: coverSize + 'px', height: coverSize + 'px' }"
+      alt=""
+      loading="lazy"
+      referrerpolicy="no-referrer"
+      @error="failed = true"
+    />
     <div class="song-meta">
       <slot />
     </div>

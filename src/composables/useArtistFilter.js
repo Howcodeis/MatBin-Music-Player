@@ -14,16 +14,14 @@ import { musicStatus } from '@/store'
 const keyword = ref('')
 
 // 拼一条可搜索文本：歌名 + 歌手 + 专辑，兼容 artists/ar、album/al 两套字段
-const searchableText = (song) => {
+const searchableText = song => {
   const artists = song.artists || song.ar || []
-  const artistText = Array.isArray(artists)
-    ? artists.map(item => item?.name || '').join(' ')
-    : ''
+  const artistText = Array.isArray(artists) ? artists.map(item => item?.name || '').join(' ') : ''
   const album = song.album?.name || song.al?.name || ''
   return `${song.name || ''} ${artistText} ${album}`.toLowerCase()
 }
 
-export function useArtistFilter () {
+export function useArtistFilter() {
   const store = musicStatus()
 
   // 关键词为空时直接返回原数组，省掉无意义的 filter

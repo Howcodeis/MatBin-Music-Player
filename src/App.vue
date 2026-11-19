@@ -1,9 +1,9 @@
 <script setup>
-import { defineOptions, onMounted, provide } from 'vue';
-import gsap from 'gsap';
-import Home from './pages/home/home.vue';
-import { musicStatus } from './store';
-import defaultCover from '@/assets/image/109951173012411790.jpg';
+import { defineOptions, onMounted, provide } from 'vue'
+import gsap from 'gsap'
+import Home from './pages/home/home.vue'
+import { musicStatus } from './store'
+import defaultCover from '@/assets/image/109951173012411790.jpg'
 
 defineOptions({
   name: 'App'
@@ -18,7 +18,7 @@ const store = musicStatus()
 const HEIGHT_VAR = '--app-height'
 let inputFocused = false
 
-const applyAppHeight = (height) => {
+const applyAppHeight = height => {
   document.documentElement.style.setProperty(HEIGHT_VAR, `${height}px`)
 }
 
@@ -29,11 +29,10 @@ const syncViewportHeight = () => {
   applyAppHeight(height)
 }
 
-const isTextField = (el) =>
-  Boolean(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+const isTextField = el => Boolean(el) && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
 
 // 音乐页才有进度条容器，用它区分是不是音乐页
-const isMusicPage = (el) => Boolean(el?.querySelector?.('#audioSchedule'))
+const isMusicPage = el => Boolean(el?.querySelector?.('#audioSchedule'))
 
 let musicEl = null
 let closingManually = false
@@ -42,24 +41,31 @@ let closingManually = false
  * 手动收起音乐页：先播完动画再跳路由。
  * 否则路由一变成 /，music 里的子路由就没匹配了，面板会先变空再动。
  */
-provide('closeMusic', () => new Promise((resolve) => {
-  if (!musicEl) {
-    resolve()
-    return
-  }
-  closingManually = true
-  gsap.to(musicEl, {
-    yPercent: 100,
-    scale: 0,
-    opacity: 0,
-    duration: 0.45,
-    ease: 'power2.in',
-    onComplete: () => {
-      musicEl = null
-      resolve()
-    }
-  })
-}))
+provide(
+  'closeMusic',
+  () =>
+    new Promise(resolve => {
+      if (!musicEl) {
+        resolve()
+        return
+      }
+      closingManually = true
+      musicEl.style.willChange = 'transform, opacity'
+      gsap.to(musicEl, {
+        yPercent: 100,
+        scale: 0,
+        opacity: 0,
+        duration: 0.45,
+        ease: 'power2.in',
+        force3D: true,
+        onComplete: () => {
+          musicEl.style.willChange = ''
+          musicEl = null
+          resolve()
+        }
+      })
+    })
+)
 
 // 音乐页从底部升起、同时放大，最后停在原本的位置
 const onPageEnter = (el, done) => {
@@ -69,14 +75,24 @@ const onPageEnter = (el, done) => {
   }
   musicEl = el
   el.style.zIndex = '2'
-  gsap.fromTo(el, { yPercent: 100, scale: 0, opacity: 0 }, {
-    yPercent: 0,
-    scale: 1,
-    opacity: 1,
-    duration: 0.55,
-    ease: 'power3.out',
-    onComplete: done
-  })
+  // 页面里 DOM 很多，动画期间提层，避免每帧重绘整页
+  el.style.willChange = 'transform, opacity'
+  gsap.fromTo(
+    el,
+    { yPercent: 100, scale: 0, opacity: 0 },
+    {
+      yPercent: 0,
+      scale: 1,
+      opacity: 1,
+      duration: 0.55,
+      ease: 'power3.out',
+      force3D: true,
+      onComplete: () => {
+        el.style.willChange = ''
+        done()
+      }
+    }
+  )
 }
 
 // 关闭时反向：缩小、落回底部
@@ -91,13 +107,18 @@ const onPageLeave = (el, done) => {
     done()
     return
   }
+  el.style.willChange = 'transform, opacity'
   gsap.to(el, {
     yPercent: 100,
     scale: 0,
     opacity: 0,
     duration: 0.45,
     ease: 'power2.in',
-    onComplete: done
+    force3D: true,
+    onComplete: () => {
+      el.style.willChange = ''
+      done()
+    }
   })
 }
 
@@ -108,10 +129,10 @@ onMounted(() => {
   window.addEventListener('resize', syncViewportHeight)
   window.addEventListener('orientationchange', syncViewportHeight)
 
-  document.addEventListener('focusin', (event) => {
+  document.addEventListener('focusin', event => {
     if (isTextField(event.target)) inputFocused = true
   })
-  document.addEventListener('focusout', (event) => {
+  document.addEventListener('focusout', event => {
     if (!isTextField(event.target)) return
     inputFocused = false
     syncViewportHeight()
@@ -120,7 +141,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full body flex items-center justify-center" :style="{ backgroundImage: 'url(' + defaultCover + ')' }">
+  <div
+    class="w-full body flex items-center justify-center"
+    :style="{ backgroundImage: 'url(' + defaultCover + ')' }"
+  >
     <!-- 主页常驻，音乐页升起来时它一直在下面 -->
     <Home />
 

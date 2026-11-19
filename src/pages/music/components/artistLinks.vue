@@ -34,8 +34,13 @@ const { goArtist } = useGoArtist()
     <template v-if="list.length">
       <template v-for="(artist, index) in list" :key="artist.id ?? index">
         <span v-if="index" class="artist-sep">{{ separator }}</span>
-        <span class="artist-link" :title="`查看 ${artist.name} 的热门歌曲`" @click.stop="goArtist(artist)">{{
-          artist.name }}</span>
+        <span
+          class="artist-link"
+          :title="`查看 ${artist.name} 的热门歌曲`"
+          @click.stop="goArtist(artist)"
+        >
+          {{ artist.name }}
+        </span>
       </template>
     </template>
     <span v-else class="artist-empty">{{ emptyText }}</span>

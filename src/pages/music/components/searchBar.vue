@@ -1,11 +1,16 @@
 <script setup>
-import { computed, defineOptions, inject, nextTick, ref, watch } from 'vue';
-import gsap from 'gsap';
-import { musicStatus } from '@/store';
-import { useRoute, useRouter } from 'vue-router';
-import { useSearchHistory, addSearchHistory, removeSearchHistory, clearSearchHistory } from '@/composables/useSearchHistory';
-import { useFavoriteFilter } from '@/composables/useFavoriteFilter';
-import { useArtistFilter } from '@/composables/useArtistFilter';
+import { computed, defineOptions, inject, nextTick, ref, watch } from 'vue'
+import gsap from 'gsap'
+import { musicStatus } from '@/store'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  useSearchHistory,
+  addSearchHistory,
+  removeSearchHistory,
+  clearSearchHistory
+} from '@/composables/useSearchHistory'
+import { useFavoriteFilter } from '@/composables/useFavoriteFilter'
+import { useArtistFilter } from '@/composables/useArtistFilter'
 
 defineOptions({
   name: 'SearchBar'
@@ -44,7 +49,7 @@ const siderMenu = inject('siderMenu', null)
 const showSiderMenu = () => siderMenu?.showSiderMenu?.()
 
 // 列表页的网络搜索
-const searchMusic = (value) => {
+const searchMusic = value => {
   const keyword = String(value ?? '').trim()
   if (!keyword) return
   keywords.value = keyword
@@ -90,11 +95,14 @@ watch(isArtistMode, () => {
 })
 
 // 在歌手页内从 A 歌手切到 B 歌手（点列表里的合作歌手）时，输入框也要跟着清空
-watch(() => route.params.id, () => {
-  if (!isArtistMode.value) return
-  keywords.value = ''
-  resetArtistKeyword()
-})
+watch(
+  () => route.params.id,
+  () => {
+    if (!isArtistMode.value) return
+    keywords.value = ''
+    resetArtistKeyword()
+  }
+)
 
 /* ---------------- 搜索历史面板 ---------------- */
 const isHistoryOpen = ref(false)
@@ -118,12 +126,14 @@ const openHistory = () => {
   nextTick(() => {
     if (!panelRef.value) return
     // 面板整体下压淡入，条目再做一次轻微右移的错位入场
-    gsap.fromTo(panelRef.value,
+    gsap.fromTo(
+      panelRef.value,
       { autoAlpha: 0, y: -8 },
       { autoAlpha: 1, y: 0, duration: 0.2, ease: 'power2.out' }
     )
     if (listRef.value?.children.length) {
-      gsap.fromTo(listRef.value.children,
+      gsap.fromTo(
+        listRef.value.children,
         { autoAlpha: 0, x: -10 },
         { autoAlpha: 1, x: 0, duration: 0.24, stagger: 0.035, ease: 'power2.out', delay: 0.04 }
       )
@@ -150,7 +160,7 @@ const closeHistory = () => {
 }
 
 // 点历史记录：回填搜索框并直接搜索
-const applyHistory = (keyword) => {
+const applyHistory = keyword => {
   searchMusic(keyword)
 }
 
@@ -183,17 +193,30 @@ const handleClear = () => {
 <template>
   <div class="flex items-center w-full px-2 sm:px-5">
     <!-- 移动端菜单按钮：窄屏下侧栏默认隐藏，没有入口就切不了路由 -->
-    <button class="iconfont icon-caidan1 mr-2 shrink-0 sm:hidden" title="菜单" @click="showSiderMenu"></button>
+    <button
+      class="iconfont icon-caidan1 mr-2 shrink-0 sm:hidden"
+      title="菜单"
+      @click="showSiderMenu"
+    ></button>
     <div
-      class="relative border-[#999999] flex items-center rounded-full border-[.125rem] w-[60%] max-w-[14.375rem] max-sm:flex-1 max-sm:max-w-none">
+      class="relative border-[#999999] flex items-center rounded-full border-[.125rem] w-[60%] max-w-[14.375rem] max-sm:flex-1 max-sm:max-w-none"
+    >
       <div class="relative w-[84%] h-full">
-        <input type="text" class="border-0 w-full outline-none text-[#FFFFFF] bg-opacity-50 p-1 text-sm bg-transparent"
-          v-model="keywords" :placeholder="inputPlaceholder"
-          @input="handleInput" @focus="openHistory" @click="openHistory" @blur="closeHistory"
-          @keydown.enter="handleSubmit" @keydown.esc="closeHistory">
+        <input
+          v-model="keywords"
+          type="text"
+          class="border-0 w-full outline-none text-[#FFFFFF] bg-opacity-50 p-1 text-sm bg-transparent"
+          :placeholder="inputPlaceholder"
+          @input="handleInput"
+          @focus="openHistory"
+          @click="openHistory"
+          @blur="closeHistory"
+          @keydown.enter="handleSubmit"
+          @keydown.esc="closeHistory"
+        />
       </div>
       <div class="absolute right-0 w-[16%] flex justify-center">
-        <button @click="handleSubmit" :title="isLocalFilterMode ? '在当前列表里查找' : '搜索'">
+        <button :title="isLocalFilterMode ? '在当前列表里查找' : '搜索'" @click="handleSubmit">
           <i class="iconfont icon-sousuo select-none"></i>
         </button>
       </div>
@@ -209,7 +232,13 @@ const handleClear = () => {
             <button class="history-item" :title="item" @click="applyHistory(item)">
               <span class="history-text">{{ item }}</span>
             </button>
-            <button class="history-del" title="删除这条记录" @click.stop="handleRemove(item, index)">×</button>
+            <button
+              class="history-del"
+              title="删除这条记录"
+              @click.stop="handleRemove(item, index)"
+            >
+              ×
+            </button>
           </li>
         </ul>
       </div>
@@ -278,7 +307,9 @@ const handleClear = () => {
   text-align: left;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.82);
-  transition: background 0.16s ease, color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
 .history-item:hover {
@@ -308,7 +339,9 @@ const handleClear = () => {
   font-size: 0.85rem;
   line-height: 1;
   color: rgba(255, 255, 255, 0.3);
-  transition: color 0.16s ease, background 0.16s ease;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
 }
 
 .history-del:hover {

@@ -1,53 +1,21 @@
 /*
- * @Author: Matbin
- * @Date: 2026-11-13
- * @Description: 歌曲表格的公共样式与触底加载
+ * 歌曲列表的公共逻辑。
+ * el-table 已经换成虚拟列表，这里只剩触底加载和收藏防误触。
  */
 import { ref } from 'vue'
-import { musicStatus } from '@/store'
 import { normalBack } from '@/utils/MessageBack'
 
-// el-table 透明背景样式
-export function useTableStyle () {
-  const store = musicStatus()
-
-  const headerRowStyle = () => ({
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-    color: 'white'
-  })
-  const headerCellStyle = () => ({
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-    padding: '5px',
-    borderBottom: '1px solid black',
-  })
-  const rowStyle = () => ({
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-    color: 'white'
-  })
-  const cellStyle = () => ({
-    border: 'none'
-  })
-
-  // 正在播放的那一行标出来，切走再回来也能找到位置
-  const rowClassName = ({ row }) => (row?.id === store.currentMusicInfo?.id ? 'is-playing-row' : '')
-
-  /*
-   * 手机上点收藏，点击有时候会冒泡到整行，误触发播放。
-   * 记一下最近点收藏的时间，行点击时跳过紧接着的那一次。
-   */
+/*
+ * 手机上点收藏，点击有时候会冒泡到整行，误触发播放。
+ * 记一下最近点收藏的时间，行点击时跳过紧接着的那一次。
+ */
+export function useTableStyle() {
   let favoriteAt = 0
-  const markFavoriteClick = () => { favoriteAt = Date.now() }
-  const isJustFavorite = () => Date.now() - favoriteAt < 300
-
-  return {
-    headerRowStyle,
-    headerCellStyle,
-    rowStyle,
-    cellStyle,
-    rowClassName,
-    markFavoriteClick,
-    isJustFavorite
+  const markFavoriteClick = () => {
+    favoriteAt = Date.now()
   }
+  const isJustFavorite = () => Date.now() - favoriteAt < 300
+  return { markFavoriteClick, isJustFavorite }
 }
 
 /**
@@ -55,16 +23,19 @@ export function useTableStyle () {
  * loader 返回 { added, hasMore } 时，会顺带在顶部提示结果。
  * @param {Function} loader 实际加载函数
  */
-export function useLoadMore (loader) {
+export function useLoadMore(loader) {
   const isLoadingMore = ref(false)
+  // 到底之后就不再触发，否则数据不足一屏时滚动容器永远在底部，会反复请求
+  let reachedEnd = false
 
   const handleLoadMore = async () => {
-    if (isLoadingMore.value) return
+    if (isLoadingMore.value || reachedEnd) return
     isLoadingMore.value = true
     try {
       const result = await loader()
       if (!result) return
       if (result.hasMore === false) {
+        reachedEnd = true
         normalBack('info', '已经到底啦', 1500)
       } else if (result.added > 0) {
         normalBack('success', `加载了 ${result.added} 首`, 1200)
@@ -76,11 +47,10 @@ export function useLoadMore (loader) {
     }
   }
 
-  return { isLoadingMore, handleLoadMore }
-}
+  // 换了搜索词 / 换了歌单之后要能重新加载
+  const resetLoadMore = () => {
+    reachedEnd = false
+  }
 
-// 歌手名格式化，兼容 artists / ar 两种字段
-export const formatArtists = (artists) => {
-  if (!Array.isArray(artists)) return ''
-  return artists.map(item => item?.name).filter(Boolean).join(' / ')
+  return { isLoadingMore, handleLoadMore, resetLoadMore }
 }

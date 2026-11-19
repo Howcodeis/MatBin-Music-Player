@@ -14,7 +14,7 @@ body {
   list-style: none;
 }
 
-::-webkit-scrollbar{
+::-webkit-scrollbar {
   width: 0;
 }
 /* 正在播放的那一行：加底色，序号和歌名提亮 */
@@ -26,7 +26,6 @@ body {
 .el-table__body tr.is-playing-row .song-name {
   color: #6ec1ff;
 }
-
 
 /* 触底加载：表格底部居中的小圈 */
 .load-more-mask {

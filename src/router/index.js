@@ -26,7 +26,7 @@ const PlaylistDetail = () => import('../pages/music/playlistDetail.vue')
 const LAST_MUSIC_PATH_KEY = 'music-player:last-music-path'
 const FIRST_VISIT_PATH = '/music/foundMusic'
 
-const isMusicPath = (path) => path === '/music' || path.startsWith('/music/')
+const isMusicPath = path => path === '/music' || path.startsWith('/music/')
 
 const readLastMusicPath = () => {
   try {
@@ -39,7 +39,7 @@ const readLastMusicPath = () => {
   return FIRST_VISIT_PATH
 }
 
-const rememberMusicPath = (path) => {
+const rememberMusicPath = path => {
   try {
     window.localStorage.setItem(LAST_MUSIC_PATH_KEY, path)
   } catch (error) {
@@ -55,7 +55,7 @@ const routes = [
       menu: '主页'
     },
     // 主页由 App.vue 常驻渲染，这里只是占位，保证进 /music 时主页不被卸载
-    component: { name: 'HomePlaceholder', render: () => h('div', { style: 'display:none' }) },
+    component: { name: 'HomePlaceholder', render: () => h('div', { style: 'display:none' }) }
   },
   {
     path: '/music',
@@ -72,7 +72,7 @@ const routes = [
         meta: {
           menu: '搜索列表'
         },
-        component: PlayList,
+        component: PlayList
       },
       {
         path: 'favorite',
@@ -80,7 +80,7 @@ const routes = [
         meta: {
           menu: '我的喜欢'
         },
-        component: Favorite,
+        component: Favorite
       },
       {
         path: 'foundMusic',
@@ -88,7 +88,7 @@ const routes = [
         meta: {
           menu: '每日推荐'
         },
-        component: FoundMusic,
+        component: FoundMusic
       },
       {
         path: 'hotPlayList',
@@ -96,7 +96,7 @@ const routes = [
         meta: {
           menu: '热门歌单'
         },
-        component: HotPlayList,
+        component: HotPlayList
       },
       {
         // 歌手热门：由歌曲列表/播放栏里的歌手名点击进入
@@ -106,7 +106,7 @@ const routes = [
           menu: '歌手热门',
           depth: 1
         },
-        component: ArtistSongs,
+        component: ArtistSongs
       },
       {
         // 歌单详情：由「热门歌单」卡片点击进入
@@ -116,7 +116,7 @@ const routes = [
           menu: '歌单详情',
           depth: 1
         },
-        component: PlaylistDetail,
+        component: PlaylistDetail
       }
     ]
   },
