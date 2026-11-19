@@ -9,7 +9,7 @@ import { defineOptions, nextTick, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { musicStatus } from '@/store'
-import { formatCount, toHttps } from '@/utils/music'
+import { formatCount, toHttps, toThumb } from '@/utils/music'
 import { saveScroll, takeScroll, clearScroll } from '@/composables/useScrollMemory'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
 
@@ -36,7 +36,8 @@ onBeforeRouteLeave(to => {
   else clearScroll(SCROLL_KEY)
 })
 
-const coverOf = item => toHttps(item?.picUrl) || defaultCover
+// 卡片封面实际 200px 左右，取 400 的图够 2x 屏用，别拉原图
+const coverOf = item => toThumb(toHttps(item?.picUrl) || '', 400) || defaultCover
 
 const openPlaylist = item => {
   router.push({

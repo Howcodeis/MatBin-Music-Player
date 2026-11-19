@@ -55,7 +55,7 @@ provide(
         yPercent: 100,
         scale: 0,
         opacity: 0,
-        duration: 0.45,
+        duration: 0.22,
         ease: 'power2.in',
         force3D: true,
         onComplete: () => {
@@ -84,7 +84,7 @@ const onPageEnter = (el, done) => {
       yPercent: 0,
       scale: 1,
       opacity: 1,
-      duration: 0.55,
+      duration: 0.3,
       ease: 'power3.out',
       force3D: true,
       onComplete: () => {
@@ -112,7 +112,7 @@ const onPageLeave = (el, done) => {
     yPercent: 100,
     scale: 0,
     opacity: 0,
-    duration: 0.45,
+    duration: 0.22,
     ease: 'power2.in',
     force3D: true,
     onComplete: () => {
@@ -136,6 +136,21 @@ onMounted(() => {
     if (!isTextField(event.target)) return
     inputFocused = false
     syncViewportHeight()
+  })
+
+  // 空闲时把音乐区所有页面的代码预取下来：
+  // 路由都是懒加载，不预取的话第一次点侧栏要等 chunk 下载才渲染
+  const idle = window.requestIdleCallback
+    ? fn => window.requestIdleCallback(fn, { timeout: 1500 })
+    : fn => setTimeout(fn, 1200)
+  idle(() => {
+    import('./pages/music/music.vue')
+    import('./pages/music/foundMusic.vue')
+    import('./pages/music/playList.vue')
+    import('./pages/music/favorite.vue')
+    import('./pages/music/hotPlayList.vue')
+    import('./pages/music/artistSongs.vue')
+    import('./pages/music/playlistDetail.vue')
   })
 })
 </script>

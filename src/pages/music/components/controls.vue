@@ -609,7 +609,6 @@ const cyclePlayMode = () => {
   border-radius: 0.8rem;
   background: rgba(20, 20, 40, 0.94);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
 }
 
 /* 只做透明度过渡：两个面板的定位 transform 不同，共用 transform 动画会打架 */

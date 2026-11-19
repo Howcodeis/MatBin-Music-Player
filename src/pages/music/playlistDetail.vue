@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
 import { PLAYTYPE, formatCount, toHttps } from '@/utils/music'
 import { useTableStyle, useLoadMore } from '@/composables/useTableStyle'
+import ListSkeleton from './components/listSkeleton.vue'
 import VirtualSongList from './components/virtualSongList.vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
 
@@ -33,6 +34,19 @@ const title = computed(() => String(route.query.name || playlistInfo.value.name 
 const tags = computed(() => (Array.isArray(playlistInfo.value.tags) ? playlistInfo.value.tags : []))
 const description = computed(() => playlistInfo.value.description || '')
 
+// 触底加载要在 watch 之前声明：下面的 watch 带 immediate，setup 阶段就会执行
+const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () => {
+  if (playlistSongs.value.length < store.searchSettings.playlistLimit) {
+    return { added: 0, hasMore: false }
+  }
+  const before = playlistSongs.value.length
+  await store.loadMorePlaylist()
+  return {
+    added: playlistSongs.value.length - before,
+    hasMore: !store.searchSettings.isPlaylistOverCounts
+  }
+})
+
 // 歌单 id 变化（含首次进入）都重新拉元信息 + 第一页
 watch(
   () => route.params.id,
@@ -45,18 +59,6 @@ watch(
   },
   { immediate: true }
 )
-
-const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () => {
-  if (playlistSongs.value.length < store.searchSettings.playlistLimit) {
-    return { added: 0, hasMore: false }
-  }
-  const before = playlistSongs.value.length
-  await store.loadMorePlaylist()
-  return {
-    added: playlistSongs.value.length - before,
-    hasMore: !store.searchSettings.isPlaylistOverCounts
-  }
-})
 
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
@@ -109,9 +111,8 @@ const goBack = () => {
 
     <!-- 歌曲列表 -->
     <div class="relative flex-1 min-h-0">
-      <div v-if="!playlistSongs.length" class="pl-empty">
-        {{ loading ? '歌单加载中…' : '该歌单暂无歌曲' }}
-      </div>
+      <ListSkeleton v-if="loading" :rows="8" />
+      <div v-else-if="!playlistSongs.length" class="pl-empty">该歌单暂无歌曲</div>
 
       <VirtualSongList
         v-else

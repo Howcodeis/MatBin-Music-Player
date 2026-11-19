@@ -2,7 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
 import gsap from 'gsap'
-import { lyricEnter, lyricLeave, animateToHidden, animateToVisible } from '@/utils/gsapTools'
+import { lyricEnter, lyricLeave } from '@/utils/gsapTools'
 import { defineOptions, nextTick, onMounted, onUnmounted, ref, watch, computed } from 'vue'
 import lyricPanel from './lyricPanel.vue'
 import ArtistLinks from '../artistLinks.vue'
@@ -61,21 +61,31 @@ watch([() => currentMusicInfo.value.id, getCurrentLyricIndex], renderLyric, { im
 const AnimationLyric = ref(null)
 const lyc = ref(null)
 const toggleLyricBoardStyle = () => {
-  // 检查边界条件
-  if (!AnimationLyric.value || !lyc.value) {
+  if (!AnimationLyric.value) {
     return normalBack('warning', '歌词面板切换失败,请检查资源获取是否正常!')
   }
-  // 使用闭包来避免潜在的竞态条件
-  const shouldShow = !isShowScrollLyrics.value
-  if (shouldShow) {
-    animateToHidden(AnimationLyric.value, 1.2, () => {
-      isShowScrollLyrics.value = shouldShow
-      animateToVisible(lyc.value, 0.5)
+  // 滚动歌词用的是 v-if，切过去之后要等 DOM 渲染出来才能做入场动画
+  if (!isShowScrollLyrics.value) {
+    gsap.to(AnimationLyric.value, {
+      autoAlpha: 0,
+      duration: 0.5,
+      force3D: true,
+      onComplete: async () => {
+        isShowScrollLyrics.value = true
+        await nextTick()
+        gsap.fromTo(lyc.value, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 })
+      }
     })
   } else {
-    animateToHidden(lyc.value, 0.5, () => {
-      isShowScrollLyrics.value = shouldShow
-      animateToVisible(AnimationLyric.value, 1.2)
+    gsap.to(lyc.value, {
+      autoAlpha: 0,
+      duration: 0.5,
+      force3D: true,
+      onComplete: async () => {
+        isShowScrollLyrics.value = false
+        await nextTick()
+        gsap.fromTo(AnimationLyric.value, { autoAlpha: 0 }, { autoAlpha: 1, duration: 1.2 })
+      }
     })
   }
 }
@@ -108,14 +118,26 @@ const formatLikes = count => {
 const refreshComments = () => {
   commentPage.value = (commentPage.value + 1) % totalPages.value
   nextTick(() => {
-    if (commentGrid.value?.children.length) {
-      // 只动外层 .comment-cell，平行四边形用的 skew 在里层，避免 transform 被覆盖
-      gsap.fromTo(
-        commentGrid.value.children,
-        { autoAlpha: 0, y: 8 },
-        { autoAlpha: 1, y: 0, duration: 0.28, stagger: 0.04, ease: 'power2.out' }
-      )
-    }
+    const cells = commentGrid.value?.children
+    if (!cells?.length) return
+    // 动画期间关掉毛玻璃：6 个胶囊同时移动，每帧重算 backdrop-filter 很吃性能
+    for (const el of cells) el.classList.add('is-moving')
+    // 只动外层 .comment-cell，平行四边形用的 skew 在里层，避免 transform 被覆盖
+    gsap.fromTo(
+      cells,
+      { autoAlpha: 0, y: 8 },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.28,
+        stagger: 0.04,
+        ease: 'power2.out',
+        force3D: true,
+        onComplete: () => {
+          for (const el of cells) el.classList.remove('is-moving')
+        }
+      }
+    )
   })
 }
 
@@ -141,7 +163,8 @@ onMounted(() => {
   gsap.from(container.value.children, {
     duration: 0.75,
     autoAlpha: 0,
-    y: 20
+    y: 20,
+    force3D: true
   })
 })
 onUnmounted(() => {
@@ -183,9 +206,9 @@ onUnmounted(() => {
               </span>
             </div>
           </div>
-          <!-- 歌词轮播 -->
+          <!-- 歌词轮播：不显示时别渲染，歌词列表几十行，常驻 DOM 会拖慢进场 -->
           <div
-            v-show="isShowScrollLyrics"
+            v-if="isShowScrollLyrics"
             ref="lyc"
             class="select-none w-full h-[75%] flex-center flex-col pb-1"
             @click="toggleLyricBoardStyle"
@@ -435,6 +458,8 @@ onUnmounted(() => {
   position: relative;
   min-width: 0;
   height: 100%;
+  /* 翻页时批量做透明度位移动画，提前提层避免重绘 */
+  will-change: transform, opacity;
 }
 
 /* 第 4~6 条（第二行）右移，形成平行四边形的斜边 */
@@ -456,6 +481,11 @@ onUnmounted(() => {
 
 .comment-bubble:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* 翻页动画期间不重算毛玻璃，动画结束立刻恢复；纯透明和 blur 在这个尺寸下几乎看不出差别 */
+.comment-cell.is-moving .comment-bubble {
+  backdrop-filter: none;
 }
 
 .comment-inner {

@@ -87,44 +87,6 @@ export function picTimeline(timeline, el, duration = 60000) {
 
 const ANIMATION_DURATION = 0.2 // 提取动画时长为常量
 
-/**
- * 将元素动画隐藏
- * @param {Object} target - GSAP动画目标元素
- * @param {number} toScale - 目标缩放比例
- * @param {number} ANIMATION_DURATION - 动画持续时间
- * @param {Function} [onComplete] - 动画完成后的回调函数
- */
-export function animateToHidden(target, ANIMATION_DURATION, toScale, onComplete) {
-  gsap.to(target, {
-    autoAlpha: 0,
-    duration: ANIMATION_DURATION,
-    scale: toScale,
-    onComplete
-  })
-}
-
-/**
- * 将元素动画显示
- * @param {Object} target - GSAP动画目标元素
- * @param {number} fromScale - 起始缩放比例
- * @param {number} ANIMATION_DURATION - 动画持续时间
- * @param {Function} [onComplete] - 动画完成后的回调函数
- */
-export function animateToVisible(target, ANIMATION_DURATION, fromScale, onComplete) {
-  gsap.fromTo(
-    target,
-    {
-      scale: fromScale,
-      autoAlpha: 0
-    },
-    {
-      scale: 1,
-      duration: ANIMATION_DURATION,
-      autoAlpha: 1,
-      onComplete
-    }
-  )
-}
 
 /**
  * 动画隐藏面板函数
@@ -200,6 +162,7 @@ export function drawerOpen(el, mask) {
       autoAlpha: 1,
       duration: DRAWER_IN_DURATION,
       ease: 'power3.out',
+      force3D: true,
       overwrite: 'auto'
     }
   )
@@ -227,6 +190,7 @@ export function drawerClose(el, mask, onComplete) {
     autoAlpha: 0,
     duration: DRAWER_OUT_DURATION,
     ease: 'power2.in',
+    force3D: true,
     overwrite: 'auto'
   })
 }

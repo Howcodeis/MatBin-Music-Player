@@ -11,6 +11,7 @@ import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
 import { PLAYTYPE } from '@/utils/music'
 import { useTableStyle } from '@/composables/useTableStyle'
+import ListSkeleton from './components/listSkeleton.vue'
 import VirtualSongList from './components/virtualSongList.vue'
 
 defineOptions({
@@ -93,7 +94,7 @@ onActivated(() => {
 
     <!-- 歌曲列表 -->
     <div class="relative flex-1 min-h-0">
-      <div v-if="loading" class="daily-empty">正在获取每日推荐…</div>
+      <ListSkeleton v-if="loading" :rows="9" />
       <div v-else-if="!dailySongs.length" class="daily-empty">暂时获取不到每日推荐，请稍后再试</div>
 
       <VirtualSongList

@@ -1,11 +1,12 @@
 <script setup>
-import { computed, defineOptions, watch } from 'vue'
+import { computed, defineOptions, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
 import { PLAYTYPE } from '@/utils/music'
 import { useTableStyle, useLoadMore } from '@/composables/useTableStyle'
 import { useArtistFilter } from '@/composables/useArtistFilter'
+import ListSkeleton from './components/listSkeleton.vue'
 import VirtualSongList from './components/virtualSongList.vue'
 
 defineOptions({
@@ -37,19 +38,10 @@ const goBack = () => {
   router.back()
 }
 
-// 歌手 id 变化都重新拉第一页
-watch(
-  () => route.params.id,
-  id => {
-    if (!id) return
-    resetArtistKeyword()
-    resetLoadMore()
-    store.setArtistSongs({ id, name: String(route.query.name || '') })
-  },
-  { immediate: true }
-)
+// 数据没回来之前显示骨架屏，避免误显示成「暂无歌曲」
+const loading = ref(true)
 
-// 触底加载：由 useLoadMore 保证同一时间只有一次请求
+// 触底加载要在 watch 之前声明：下面的 watch 带 immediate，setup 阶段就会执行
 const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () => {
   // 数据不满一页说明没有下一页
   if (artistSongs.value.length < store.searchSettings.artistLimit) {
@@ -62,6 +54,20 @@ const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () =>
     hasMore: !store.searchSettings.isArtistOverCounts
   }
 })
+
+// 歌手 id 变化都重新拉第一页
+watch(
+  () => route.params.id,
+  async id => {
+    if (!id) return
+    resetArtistKeyword()
+    resetLoadMore()
+    loading.value = true
+    await store.setArtistSongs({ id, name: String(route.query.name || '') })
+    loading.value = false
+  },
+  { immediate: true }
+)
 
 // 点击行播放：切到歌手热门作为当前播放列表，上下首就在该歌手的热门里轮转
 const playChoose = row => {
@@ -108,8 +114,9 @@ const hasMore = computed(() => !store.searchSettings.isArtistOverCounts)
     </div>
 
     <div class="relative flex-1 min-h-0">
-      <!-- 空状态：区分该歌手没歌和筛选不到 -->
-      <div v-if="!artistSongs.length" class="artist-empty">
+      <!-- 空状态：区分加载中、该歌手没歌和筛选不到 -->
+      <ListSkeleton v-if="loading" :rows="8" />
+      <div v-else-if="!artistSongs.length" class="artist-empty">
         <i class="iconfont icon-sousuo artist-empty__icon"></i>
         <p class="text-sm">该歌手暂无热门歌曲</p>
       </div>

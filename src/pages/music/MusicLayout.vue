@@ -95,7 +95,8 @@ watch(
 
 <template>
   <!-- 移动端遮罩：点击空白处收起抽屉 -->
-  <div v-if="isMobile" ref="maskRef" class="sider-mask" @click="closeSiderMenu"></div>
+  <!-- 遮罩：用 v-show 保持元素常驻，避免每次开关都重建 DOM -->
+  <div v-show="isMobile" ref="maskRef" class="sider-mask" @click="closeSiderMenu"></div>
 
   <!-- 侧栏：宽屏常驻，窄屏为覆盖式抽屉 -->
   <aside ref="drawerRef" class="sider-panel" :class="{ 'sider-panel--drawer': isMobile }">
@@ -235,6 +236,8 @@ watch(
     box-shadow: 12px 0 32px rgba(0, 0, 0, 0.5);
     opacity: 0;
     visibility: hidden;
+    /* 抽屉是全高面板，滑动时提到独立图层，避免整片重绘 */
+    will-change: transform, opacity;
   }
 
   .sider-close {
