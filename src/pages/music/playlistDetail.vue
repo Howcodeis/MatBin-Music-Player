@@ -32,6 +32,11 @@ const { keyword: playlistKeyword, filteredPlayListDetails } = usePlayListDetails
 
 const loading = ref(false)
 
+// 歌单滚动位置记忆：key 按歌单 id 隔离，切到别的歌单不会串位置。
+// 前缀避免和 charts / hotPlayList 的 key 撞上。
+const songList = ref(null)
+const scrollKey = computed(() => `playlist-detail:${String(route.params.id || '')}`)
+
 const cover = computed(() => toHttps(playlistInfo.value.cover) || defaultCover)
 const title = computed(() => String(route.query.name || playlistInfo.value.name || '歌单'))
 const tags = computed(() => (Array.isArray(playlistInfo.value.tags) ? playlistInfo.value.tags : []))
@@ -67,6 +72,8 @@ watch(
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
   if (isJustFavorite()) return
+  // 点歌这一刻记下滚动距离，下次进同一歌单仍停在这里
+  songList.value?.saveCurrentScroll()
   // 传当前列表当播放队列：之后再浏览别的歌单/重新搜索，不会替换正在播放的队列
   musicStatus().playFromList(
     filteredPlayListDetails.value,
@@ -140,8 +147,10 @@ const goBack = () => {
 
       <VirtualSongList
         v-else
+        ref="songList"
         :songs="filteredPlayListDetails"
         :current-id="currentMusicInfo.id"
+        :scroll-memory-key="scrollKey"
         :loading="isLoadingMore"
         :has-more="hasMore"
         @row-click="playChoose"

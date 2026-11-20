@@ -15,7 +15,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
  * @param {number} [remaining=0] - 距离下一句歌词的剩余秒数，用于缩放入场时长
  * @returns {gsap.core.Tween|null}
  */
-export function lyricEnter(el, remaining = 0) {
+export function lyricEnter (el, remaining = 0) {
   if (!el) return null
   // 剩余时间越长，入场越从容；限制在 0.35s ~ 1.2s，避免极端值
   const duration = remaining > 0 ? clamp(remaining * 0.45, 0.35, 1.2) : 0.45
@@ -24,14 +24,18 @@ export function lyricEnter(el, remaining = 0) {
     {
       y: 18,
       autoAlpha: 0,
-      filter: 'blur(2px)'
+      filter: 'blur(2px)',
+      scaleX: 1.3
     },
     {
       y: 0,
       autoAlpha: 1,
       filter: 'blur(0px)',
+      scaleX: 1,
       duration,
-      ease: 'power2.out',
+      ease: 'bounce.out',
+      // ease: 'elastic.out(1.5, 0.5)',
+      // ease: 'power2.out',
       force3D: true,
       overwrite: 'auto'
     }
@@ -43,20 +47,22 @@ export function lyricEnter(el, remaining = 0) {
  * @param {HTMLElement} el - 上一句歌词元素
  * @returns {gsap.core.Tween|null}
  */
-export function lyricLeave(el) {
+export function lyricLeave (el) {
   if (!el) return null
   return gsap.fromTo(
     el,
     {
       y: 0,
       autoAlpha: 1,
-      filter: 'blur(0px)'
+      filter: 'blur(0px)',
+      scaleX: 1
     },
     {
       y: -18,
       autoAlpha: 0,
       filter: 'blur(4px)',
       duration: 0.28,
+      scaleX: 0.5,
       ease: 'power2.in',
       force3D: true,
       overwrite: 'auto'
@@ -71,7 +77,7 @@ export function lyricLeave(el) {
  * @param {number} duration - 动画时长，单位毫秒
  * returns {gsap.core.Timeline} - 返回传入的 timeline，方便链式调用
  */
-export function picTimeline(timeline, el, duration = 60000) {
+export function picTimeline (timeline, el, duration = 60000) {
   // 参数有效性检查
   if (!timeline || !el) {
     console.error('Invalid timeline or element provided.')
@@ -95,7 +101,7 @@ const ANIMATION_DURATION = 0.2 // 提取动画时长为常量
  * @param {number} y - 元素隐藏后的垂直偏移量，用于动画效果。
  * @param {Function} onComplete - 动画完成后的回调函数。
  */
-export function PanelHideY(target, y, onComplete) {
+export function PanelHideY (target, y, onComplete) {
   gsap.to(target, {
     y: y,
     autoAlpha: 0,
@@ -114,7 +120,7 @@ export function PanelHideY(target, y, onComplete) {
  * @param {number} startY - 动画开始时元素的y轴位置。
  * @param {number} endY - 动画结束时元素的y轴位置。
  */
-export function PanelShowY(target, startY, endY) {
+export function PanelShowY (target, startY, endY) {
   gsap.fromTo(
     target,
     {
@@ -143,7 +149,7 @@ const MASK_DURATION = 0.2
  * @param {HTMLElement} el 抽屉元素
  * @param {HTMLElement} [mask] 遮罩元素
  */
-export function drawerOpen(el, mask) {
+export function drawerOpen (el, mask) {
   if (mask) {
     gsap.to(mask, {
       autoAlpha: 1,
@@ -173,7 +179,7 @@ export function drawerOpen(el, mask) {
  * @param {HTMLElement} [mask] 遮罩元素
  * @param {Function} [onComplete] 关闭完成回调
  */
-export function drawerClose(el, mask, onComplete) {
+export function drawerClose (el, mask, onComplete) {
   if (mask) {
     gsap.to(mask, {
       autoAlpha: 0,
@@ -197,7 +203,7 @@ export function drawerClose(el, mask, onComplete) {
 /**
  * 不带动画地把抽屉置为关闭态（首次进入、切换断点时用）
  */
-export function drawerSetClosed(el, mask) {
+export function drawerSetClosed (el, mask) {
   if (el) gsap.set(el, { xPercent: -100, autoAlpha: 0 })
   if (mask) gsap.set(mask, { autoAlpha: 0 })
 }
@@ -205,7 +211,7 @@ export function drawerSetClosed(el, mask) {
 /**
  * 清除抽屉上的内联样式，恢复成桌面端常驻布局
  */
-export function drawerReset(el, mask) {
+export function drawerReset (el, mask) {
   if (el) gsap.set(el, { clearProps: 'transform,opacity,visibility' })
   if (mask) gsap.set(mask, { autoAlpha: 0 })
 }

@@ -3,7 +3,7 @@ import { musicStatus } from '@/store'
 import { storeToRefs } from 'pinia'
 import { timeFormat, PLAYMODEL, PLAYTYPE, toThumb } from '@/utils/music'
 import { playProgress } from '@/utils/playProgress'
-import { computed, defineOptions, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineOptions, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
 import { useCanHover } from '@/composables/useResponsive'
 import { normalBack } from '@/utils/MessageBack'
@@ -111,10 +111,34 @@ const onVolumeChange = value => {
 /* ---------------- 控制栏弹层（音量 / 播放列表，互斥） ---------------- */
 const controlBarRef = ref(null)
 const activePanel = ref('') // '' | 'volume' | 'playlist'
+const playlistRef = ref(null)
+
+/*
+ * 打开播放列表时，把「正在播放」那一行滚到可视区，让用户一眼看到当前歌在队列的位置。
+ * 不用 scrollIntoView：控制栏是 absolute 层，它会连带滚动外层面板，把整个界面顶跑。
+ * li 和 ul 的 offsetParent 同为 .playlist-pop，两者 offsetTop 相减就是行相对列表顶部的距离。
+ */
+const scrollCurrentIntoView = async () => {
+  await nextTick()
+  const listEl = playlistRef.value
+  const currentEl = listEl?.querySelector('li.is-current')
+  if (!listEl || !currentEl) return
+  const top =
+    currentEl.offsetTop - listEl.offsetTop - (listEl.clientHeight - currentEl.clientHeight) / 2
+  listEl.scrollTop = Math.max(0, top)
+}
 
 const togglePanel = name => {
   activePanel.value = activePanel.value === name ? '' : name
+  if (activePanel.value === 'playlist') scrollCurrentIntoView()
 }
+// 面板开着时切歌（下一首/列表点歌/上下首），自动跟随到新的当前歌曲
+watch(
+  () => currentMusicInfo.value?.id,
+  () => {
+    if (activePanel.value === 'playlist') scrollCurrentIntoView()
+  }
+)
 const closePanel = () => {
   activePanel.value = ''
 }
@@ -431,11 +455,11 @@ const cyclePlayMode = () => {
               <span class="playlist-count">{{ activePlayList.length }} 首</span>
             </div>
             <div v-if="!activePlayList.length" class="playlist-empty">列表里还没有歌曲</div>
-            <ul v-else class="playlist-items">
+            <ul v-else ref="playlistRef" class="playlist-items">
               <li
                 v-for="row in activePlayList"
                 :key="row.id"
-                :class="{ 'is-current': row.id === currentMusicInfo.id }"
+                :class="{ 'is-current': String(row.id) === String(currentMusicInfo.id) }"
                 @click="playFromList(row)"
               >
                 <span class="pl-name" :title="row.name">{{ row.name }}</span>

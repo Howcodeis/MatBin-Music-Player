@@ -3,10 +3,11 @@
  * 虚拟滚动的歌曲列表，替代 el-table。
  * el-table 会把所有行都渲染成 DOM，几百行时滚动明显卡；这里只渲染可视区域内的行。
  */
-import { computed, onActivated, onDeactivated } from 'vue'
+import { computed, onActivated, onDeactivated, onMounted, watch } from 'vue'
 import { useMediaQuery, useVirtualList, useInfiniteScroll } from '@vueuse/core'
 import { timeFormat } from '@/utils/music'
 import { musicStatus } from '@/store'
+import { saveScroll, takeScroll } from '@/composables/useScrollMemory'
 import SongCell from './songCell.vue'
 import ArtistLinks from './artistLinks.vue'
 
@@ -18,7 +19,9 @@ const props = defineProps({
   songs: { type: Array, default: () => [] },
   currentId: { type: [String, Number], default: '' },
   loading: { type: Boolean, default: false },
-  hasMore: { type: Boolean, default: true }
+  hasMore: { type: Boolean, default: true },
+  // 传了才启用「按 key 记忆滚动位置」。不传的页面（搜索/喜欢/每日/歌手）维持原来的组件内 savedTop 逻辑。
+  scrollMemoryKey: { type: String, default: '' }
 })
 
 const emit = defineEmits(['row-click', 'favorite-toggle', 'load-more'])
@@ -46,29 +49,108 @@ const pad = n => (n < 10 ? '0' + n : String(n))
 const isFav = id => store.isFavorite(id)
 
 /*
- * KeepAlive 缓存页面时会把 DOM 移出文档，scrollTop 会被浏览器清零，
- * 切回来就回到顶部了。在这里离开前记下、回来后还原。
+ * 滚动位置记忆分两条路：
+ * - 没传 scrollMemoryKey 的页面（搜索/喜欢/每日/歌手）沿用组件内的 savedTop。
+ * - 传了 key 的页面（歌单详情）走模块级 useScrollMemory，按 key 存；
+ *   KeepAlive max=6，实例可能被回收，组件内变量会丢，模块级 Map 不会。
+ *
+ * pendingTop 是关键：takeScroll 取一次就删，歌单数据又是异步加载的，
+ * 太早把 scrollTop 写进一个还没撑开的容器会被浏览器钳到 0，位置就永久丢了。
+ * 所以取出来先挂着，等列表真正渲染出高度再写。
  */
 let savedTop = 0
+let pendingTop = null
+let restoreAttempts = 0
+// 进入时固化的 key。不能用 props.scrollMemoryKey 当场算：
+// 离开时 route 先变、params.id 变空，computed 的 key 会塌成 'playlist-detail:'，
+// 结果存进空 key、回来按带 id 的 key 取，永远对不上。
+let activeKey = ''
+const MAX_RESTORE_ATTEMPTS = 90 // 约 1.5s，够等异步数据 + 虚拟列表撑开，又不会无限循环
+
+const applyPendingTop = () => {
+  if (!activeKey || pendingTop == null) return
+  const el = containerProps.ref.value
+  if (!el) return
+  requestAnimationFrame(() => {
+    const target = containerProps.ref.value
+    if (!target || pendingTop == null) return
+    // 虚拟列表 wrapper 还没撑开（数据刚到 / 组件刚切回来），自己重试几帧。
+    // 不能只等 watch(songs.length)：数据是从 store 同步读的，length 只变一次，
+    // 那一次高度没撑开就 return 的话位置会永远挂在那儿写不进去。
+    if (pendingTop > 0 && target.scrollHeight <= target.clientHeight + 1) {
+      if (restoreAttempts++ < MAX_RESTORE_ATTEMPTS) requestAnimationFrame(applyPendingTop)
+      return
+    }
+    restoreAttempts = 0
+    target.scrollTop = pendingTop
+    pendingTop = null
+  })
+}
 
 onDeactivated(() => {
   const el = containerProps.ref.value
-  savedTop = el ? el.scrollTop : 0
+  if (activeKey) {
+    if (el) saveScroll(activeKey, el)
+  } else {
+    savedTop = el ? el.scrollTop : 0
+  }
 })
 
-onActivated(() => {
+/*
+ * 恢复入口有两个：onActivated（KeepAlive 命中时）和 onMounted（实例被重建时）。
+ * 实测路由用 :key="fullPath" + Transition，切走再回来是「销毁重建」而非「激活缓存」，
+ * 所以只写 onActivated 会漏掉重建场景，必须在 mounted 里也取一次。
+ */
+const restoreOnEnter = () => {
+  // 用此刻的 key 固化：此时 route 是本歌单，params.id 正确
+  activeKey = props.scrollMemoryKey
+  if (activeKey) {
+    // 不直接滚：数据是异步拉回来的，容器此刻可能还没高度。
+    // 取出来先挂着，等列表撑开再写；和 restoreScroll 共用判空，避免重复 take。
+    if (pendingTop == null) pendingTop = takeScroll(activeKey)
+    applyPendingTop()
+    return
+  }
   const el = containerProps.ref.value
   if (!el || !savedTop) return
-  // 等这一帧渲染完，列表高度撑开了再滚，否则会被钳到 0
   requestAnimationFrame(() => {
     el.scrollTop = savedTop
   })
+}
+
+onMounted(restoreOnEnter)
+onActivated(() => {
+  // 重建场景 mounted 已取过；这里靠 pendingTop 判空跳过，避免重复 take
+  restoreOnEnter()
 })
+
+// 数据到达 / 触底加载后列表长度变化，都是重试恢复的时机
+watch(() => props.songs.length, applyPendingTop)
+
+// 兜底固化：若某些场景 onActivated 尚未跑过（例如点歌发生在首帧），用此刻的正确 key 补上
+const ensureActiveKey = () => {
+  if (!activeKey && props.scrollMemoryKey) activeKey = props.scrollMemoryKey
+}
 
 defineExpose({
   scrollToTop: () => {
     const el = containerProps.ref.value
     if (el) el.scrollTop = 0
+  },
+  getScroller: () => containerProps.ref.value,
+  // 点歌瞬间记下当前位置
+  saveCurrentScroll: () => {
+    ensureActiveKey()
+    if (!activeKey) return
+    const el = containerProps.ref.value
+    if (el) saveScroll(activeKey, el)
+  },
+  // 数据就绪后由父组件主动触发；内部会等容器撑开再写
+  restoreScroll: () => {
+    ensureActiveKey()
+    if (!activeKey) return
+    if (pendingTop == null) pendingTop = takeScroll(activeKey)
+    applyPendingTop()
   }
 })
 </script>
