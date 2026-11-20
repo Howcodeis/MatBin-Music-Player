@@ -112,11 +112,11 @@ watch(musicCoverPath, url => {
 <template>
   <!-- 整个音乐界面 包括空白 -->
   <div
-    class="flex box-border will-change-scroll absolute w-full h-full min-h-[40rem] justify-center items-center max-md:min-h-0 max-md:items-end"
+    class="flex box-border will-change-scroll absolute w-full h-full justify-center overflow-y-auto max-md:items-end"
   >
     <!-- 音乐展示界面 不包括空白-->
     <div
-      class="box-border border bg-black/50 rounded-3xl absolute min-h-[660px] duration-200 overflow-hidden w-[70%] h-2/3 flex max-md:min-h-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[80%] max-w-[1000px]"
+      class="box-border border bg-black/50 rounded-3xl relative m-auto duration-200 overflow-hidden w-[70%] h-[69%] flex max-md:my-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[85%] max-w-[1000px]"
     >
       <!--背景封面：切歌时新旧两张图交叉淡变。scale-105 让 blur 的虚边落到裁剪线外，不会在边上露底色。-->
       <Transition name="bg-fade">
@@ -133,7 +133,7 @@ watch(musicCoverPath, url => {
         <div
           v-show="!isShowAnimationLyrics"
           ref="listPage"
-          class="absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] flex"
+          class="absolute w-full h-[calc(100%_-_104px)] flex"
         >
           <!-- 音乐列表以及搜索 -->
           <div class="relative w-full h-full flex">
@@ -144,7 +144,7 @@ watch(musicCoverPath, url => {
         <div
           v-if="isShowAnimationLyrics"
           ref="soloItem"
-          class="box-border absolute w-full h-[85%] max-md:h-[calc(100%_-_104px)] z-10"
+          class="box-border absolute w-full h-[calc(100%_-_104px)] z-10"
         >
           <!-- 切换按钮 -->
           <div
@@ -161,9 +161,8 @@ watch(musicCoverPath, url => {
           </div>
           <soloPage></soloPage>
         </div>
-        <!--控件部分-->
         <div
-          class="absolute w-full h-[15%] max-md:h-[104px] border-gradient text-[#000000] bottom-0 z-20"
+          class="absolute w-full h-[104px] border-gradient text-[#000000] bottom-0 z-20"
         >
           <!-- 控键 -->
           <div class="relative bottom-0 flex w-full h-full select-none">
