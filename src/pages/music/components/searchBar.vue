@@ -11,6 +11,7 @@ import {
 } from '@/composables/useSearchHistory'
 import { useFavoriteFilter } from '@/composables/useFavoriteFilter'
 import { useArtistFilter } from '@/composables/useArtistFilter'
+import { usePlayListDetailsFilter } from '@/composables/usePlayListDetailsFilter'
 
 defineOptions({
   name: 'SearchBar'
@@ -24,7 +25,8 @@ const { history: searchHistory } = useSearchHistory()
 const { keyword: favoriteKeyword } = useFavoriteFilter()
 // 歌手页的本地筛选关键词（和 artistSongs.vue 共用同一个 ref）
 const { keyword: artistKeyword, resetArtistKeyword } = useArtistFilter()
-
+// 歌单页的本地筛选关键词（和 playlistDetail.vue 共用同一个 ref）
+const { keyword: playListDetailKeyword } = usePlayListDetailsFilter()
 /*
  * 搜索框有两种模式，由当前路由决定：
  * - favorite 页：只做本地筛选，不发请求、不记搜索历史、不跳路由；
@@ -33,12 +35,19 @@ const { keyword: artistKeyword, resetArtistKeyword } = useArtistFilter()
 const isFavoriteMode = computed(() => route.name === 'favorite')
 // 歌手页同样是页内筛选：只在已加载的歌手热门里过滤，不发网络请求
 const isArtistMode = computed(() => route.name === 'artistSongs')
+// 歌单搜索
+// const isHotPlayListMode = computed(() => route.name === 'hotPlayList')
+// 歌单内部搜索筛选
+const isPlayListDetailMode = computed(() => route.name === 'playlistDetail')
 // 所有页内筛选模式的集合，用来统一控制搜索历史面板
-const isLocalFilterMode = computed(() => isFavoriteMode.value || isArtistMode.value)
+const isLocalFilterMode = computed(
+  () => isFavoriteMode.value || isArtistMode.value || isPlayListDetailMode.value
+)
 
 const inputPlaceholder = computed(() => {
   if (isFavoriteMode.value) return '搜索我喜欢的音乐'
   if (isArtistMode.value) return '搜索该作者的热门歌曲'
+  if (isPlayListDetailMode.value) return '搜索歌单中的歌曲'
   return '搜索歌曲'
 })
 
@@ -63,6 +72,7 @@ const searchMusic = value => {
 const handleInput = () => {
   if (isFavoriteMode.value) favoriteKeyword.value = keywords.value
   else if (isArtistMode.value) artistKeyword.value = keywords.value
+  else if (isPlayListDetailMode.value) playListDetailKeyword.value = keywords.value
 }
 
 // 回车 / 点搜索按钮：收藏页、歌手页只确认一次筛选，其余页走网络搜索
@@ -77,6 +87,11 @@ const handleSubmit = () => {
     closeHistory()
     return
   }
+  if (isPlayListDetailMode.value) {
+    playListDetailKeyword.value = keywords.value
+    closeHistory()
+    return
+  }
   searchMusic(keywords.value)
 }
 
@@ -84,6 +99,13 @@ const handleSubmit = () => {
 watch(isFavoriteMode, () => {
   keywords.value = ''
   favoriteKeyword.value = ''
+  closeHistory()
+})
+
+// 进出歌单页时清掉输入和筛选条件，避免上次的关键词悄悄过滤新的歌单列表
+watch(isPlayListDetailMode, () => {
+  keywords.value = ''
+  playListDetailKeyword.value = ''
   closeHistory()
 })
 

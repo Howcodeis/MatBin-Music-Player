@@ -99,6 +99,14 @@ export const reqPersonalizedPlaylists = (limit = 30) => {
 }
 
 /**
+ * 榜单详情列表
+ * 一次返回所有榜单，每个榜单带前 3 首（旧版字段 first/second = 歌名/歌手）
+ */
+export const reqTopLists = () => {
+  return http.get('/toplist/detail')
+}
+
+/**
  * 每日推荐歌曲
  * 未登录也会返回一份日推（登录后才是账号专属口味）
  */

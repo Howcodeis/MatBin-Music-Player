@@ -13,6 +13,7 @@ const PlayList = () => import('../pages/music/playList.vue')
 const Favorite = () => import('../pages/music/favorite.vue')
 const FoundMusic = () => import('../pages/music/foundMusic.vue')
 const HotPlayList = () => import('../pages/music/hotPlayList.vue')
+const Charts = () => import('../pages/music/charts.vue')
 const ArtistSongs = () => import('../pages/music/artistSongs.vue')
 const PlaylistDetail = () => import('../pages/music/playlistDetail.vue')
 
@@ -99,6 +100,15 @@ const routes = [
         component: HotPlayList
       },
       {
+        // 官方音乐榜单：点卡片进的是同一个 playlistDetail
+        path: 'charts',
+        name: 'charts',
+        meta: {
+          menu: '音乐榜单'
+        },
+        component: Charts
+      },
+      {
         // 歌手热门：由歌曲列表/播放栏里的歌手名点击进入
         path: 'artist/:id',
         name: 'artistSongs',
@@ -109,7 +119,7 @@ const routes = [
         component: ArtistSongs
       },
       {
-        // 歌单详情：由「热门歌单」卡片点击进入
+        // 歌单详情
         path: 'playlist/:id',
         name: 'playlistDetail',
         meta: {

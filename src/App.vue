@@ -158,6 +158,7 @@ onMounted(() => {
   import('./pages/music/playList.vue')
   import('./pages/music/favorite.vue')
   import('./pages/music/hotPlayList.vue')
+  import('./pages/music/charts.vue')
   import('./pages/music/artistSongs.vue')
   import('./pages/music/playlistDetail.vue')
 

@@ -11,7 +11,7 @@ defineOptions({
   name: 'FavoriteList'
 })
 
-const { favorite, playType, currentMusicInfo } = storeToRefs(musicStatus())
+const { favorite, currentMusicInfo } = storeToRefs(musicStatus())
 const { markFavoriteClick, isJustFavorite } = useTableStyle()
 // 表格数据用过滤后的收藏，关键词来自顶部搜索框（和 searchBar 共用同一个 ref）
 const { keyword: favoriteKeyword, filteredFavorite } = useFavoriteFilter()
@@ -20,8 +20,8 @@ const { keyword: favoriteKeyword, filteredFavorite } = useFavoriteFilter()
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
   if (isJustFavorite()) return
-  playType.value = PLAYTYPE.FAVORITE
-  musicStatus().setMusicInfo(row)
+  // 传当前列表当播放队列：之后再浏览别的歌单/重新搜索，不会替换正在播放的队列
+  musicStatus().playFromList(filteredFavorite.value, row, PLAYTYPE.FAVORITE)
 }
 
 // 再点一次爱心即取消收藏，行会从列表里消失

@@ -14,6 +14,7 @@ import {
   reqSongUrl,
   reqSongComment,
   reqPersonalizedPlaylists,
+  reqTopLists,
   reqRecommendSongs,
   reqPlaylistInfo,
   reqPlayListDetail,
@@ -135,6 +136,36 @@ export const getPersonalizedPlaylists = async (limit = 30) => {
   const res = await reqPersonalizedPlaylists(limit)
   if (res?.code == 200) return res.result || []
   throw new Error('获取推荐歌单失败')
+}
+
+/**
+ * @Description: 官方音乐榜单
+ *
+ * /toplist/detail 会一次返回全部榜单（含各种风格榜），
+ * 这里只保留带 ToplistType 的官方榜（飙升/新歌/原创/热歌等），
+ * 其余「网易云古典榜」这类主题榜不算官方榜，先不展示。
+ *
+ * 每个榜单的 tracks 是旧版结构：first = 歌名，second = 歌手。
+ * @returns {Array} [{ id, name, cover, updateFrequency, trackCount, playCount, topTracks }]
+ */
+export const getTopLists = async () => {
+  const res = await reqTopLists()
+  if (res?.code != 200) throw new Error('获取榜单失败')
+  const list = Array.isArray(res.list) ? res.list : []
+  return list
+    .filter(item => item.ToplistType)
+    .map(item => ({
+      id: item.id,
+      name: item.name || '',
+      cover: toHttps(item.coverImgUrl) || '',
+      updateFrequency: item.updateFrequency || '',
+      trackCount: item.trackCount || 0,
+      playCount: item.playCount || 0,
+      topTracks: (item.tracks || []).slice(0, 3).map(track => ({
+        name: track?.first || '',
+        artist: track?.second || ''
+      }))
+    }))
 }
 
 /**

@@ -9,7 +9,7 @@ defineOptions({
 
 // 只保留真实存在的路由名；显示文案直接取路由 meta.menu，避免再维护一份硬编码
 const router = useRouter()
-const MENU_NAMES = ['home', 'playList', 'favorite', 'foundMusic', 'hotPlayList']
+const MENU_NAMES = ['home', 'playList', 'favorite', 'foundMusic', 'hotPlayList', 'charts']
 
 const menus = computed(() => {
   const records = router.getRoutes()

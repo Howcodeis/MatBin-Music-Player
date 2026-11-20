@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
 import { PLAYTYPE, formatCount, toHttps } from '@/utils/music'
 import { useTableStyle, useLoadMore } from '@/composables/useTableStyle'
+import { usePlayListDetailsFilter } from '@/composables/usePlayListDetailsFilter'
 import ListSkeleton from './components/listSkeleton.vue'
 import VirtualSongList from './components/virtualSongList.vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
@@ -24,8 +25,10 @@ const route = useRoute()
 const router = useRouter()
 const store = musicStatus()
 
-const { playlistSongs, playlistInfo, playType, currentMusicInfo } = storeToRefs(store)
+const { playlistSongs, playlistInfo, currentMusicInfo } = storeToRefs(store)
 const { markFavoriteClick, isJustFavorite } = useTableStyle()
+// 关键词由顶部搜索栏写入（searchBar 里已经接好了），这里只消费过滤结果
+const { keyword: playlistKeyword, filteredPlayListDetails } = usePlayListDetailsFilter()
 
 const loading = ref(false)
 
@@ -36,9 +39,8 @@ const description = computed(() => playlistInfo.value.description || '')
 
 // 触底加载要在 watch 之前声明：下面的 watch 带 immediate，setup 阶段就会执行
 const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () => {
-  if (playlistSongs.value.length < store.searchSettings.playlistLimit) {
-    return { added: 0, hasMore: false }
-  }
+  // 到底与否由 store 按歌单 trackCount 判断，不看本页条数
+  if (store.searchSettings.isPlaylistOverCounts) return null
   const before = playlistSongs.value.length
   await store.loadMorePlaylist()
   return {
@@ -52,6 +54,8 @@ watch(
   () => route.params.id,
   async id => {
     if (!id) return
+    // 换歌单时清掉上一个歌单的关键词，否则新歌单会莫名其妙只剩几条
+    playlistKeyword.value = ''
     resetLoadMore()
     loading.value = true
     await store.setPlaylistDetail(id)
@@ -63,8 +67,13 @@ watch(
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
   if (isJustFavorite()) return
-  playType.value = PLAYTYPE.HOT
-  store.setMusicInfo(row)
+  // 传当前列表当播放队列：之后再浏览别的歌单/重新搜索，不会替换正在播放的队列
+  musicStatus().playFromList(
+    filteredPlayListDetails.value,
+    row,
+    PLAYTYPE.HOT,
+    playlistInfo.value.id
+  )
 }
 
 const toggleFavorite = row => {
@@ -74,8 +83,17 @@ const toggleFavorite = row => {
 
 const hasMore = computed(() => !store.searchSettings.isPlaylistOverCounts)
 
+/*
+ * 返回上一页，而不是固定回热门歌单。
+ * 详情页现在有三个入口：热门歌单卡片、音乐榜单卡片、外部链接，
+ * 写死目标会把从榜单进来的用户莫名送回热门歌单。
+ * 直接输 URL 进来时没有历史记录，兜底回热门歌单。
+ */
 const goBack = () => {
-  router.push({ name: 'hotPlayList' })
+  const back = router.options.history.state.back
+  // 只认应用内的历史（以 / 开头）；从外部链接或新标签直接进来时 back 可能是空或外站地址
+  if (typeof back === 'string' && back.startsWith('/')) router.back()
+  else router.push({ name: 'hotPlayList' })
 }
 </script>
 
@@ -101,8 +119,8 @@ const goBack = () => {
       <button
         class="pl-back"
         type="button"
-        title="返回热门歌单"
-        aria-label="返回热门歌单"
+        title="返回上一页"
+        aria-label="返回上一页"
         @click="goBack"
       >
         <i class="iconfont icon-xiangzuo"></i>
@@ -113,10 +131,16 @@ const goBack = () => {
     <div class="relative flex-1 min-h-0">
       <ListSkeleton v-if="loading" :rows="8" />
       <div v-else-if="!playlistSongs.length" class="pl-empty">该歌单暂无歌曲</div>
+      <!-- 搜到了但没匹配：和「歌单本身没歌」区分开 -->
+      <div v-else-if="!filteredPlayListDetails.length" class="pl-empty">
+        <i class="iconfont icon-sousuo pl-empty__icon" />
+        <p>没有找到「{{ playlistKeyword }}」相关的歌曲</p>
+        <p class="pl-empty__tip">换个歌名、歌手或专辑试试</p>
+      </div>
 
       <VirtualSongList
         v-else
-        :songs="playlistSongs"
+        :songs="filteredPlayListDetails"
         :current-id="currentMusicInfo.id"
         :loading="isLoadingMore"
         :has-more="hasMore"
@@ -250,12 +274,25 @@ const goBack = () => {
 
 .pl-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   width: 100%;
   height: 100%;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.pl-empty__icon {
+  font-size: 2.4rem;
+  color: rgba(255, 255, 255, 0.28);
+  margin-bottom: 0.2rem;
+}
+
+.pl-empty__tip {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.32);
 }
 
 /* ---------------- 表格文字 ---------------- */

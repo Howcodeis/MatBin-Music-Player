@@ -82,12 +82,18 @@ onUnmounted(() => {
   <div class="flex justify-center h-full w-full md:w-[60%] overflow-hidden">
     <!-- 文字在模糊背景下滚动导致背景失真，出现块状问题 添加will-change-scroll 解决 -->
     <ul
-ref="lyricBoard" class="overflow-y-scroll pt-[10rem] pb-[12rem] w-[80%] h-full will-change-scroll" @wheel="handleMove"
-      @touchmove="handleMove">
+      ref="lyricBoard"
+      class="overflow-y-scroll pt-[10rem] pb-[12rem] w-[80%] h-full will-change-scroll"
+      @wheel="handleMove"
+      @touchmove="handleMove"
+    >
       <li
-v-for="(lyric, index) in currentMusicInfo.lyric" :key="index"
+        v-for="(lyric, index) in currentMusicInfo.lyric"
+        :key="index"
         class="cursor-pointer leading-relaxed my-4 text-center text-slate-400 duration-300 will-change-transform"
-        :class="[index == getCurrentLyricIndex ? 'active' : '']" @click.stop="skipLyric(lyric)">
+        :class="[index == getCurrentLyricIndex ? 'active' : '']"
+        @click.stop="skipLyric(lyric)"
+      >
         <div>{{ lyric.word }}</div>
         <!-- 官方翻译歌词，只有接口给了 tlyric 才渲染 -->
         <div v-if="lyric.tword" class="tword">{{ lyric.tword }}</div>

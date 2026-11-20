@@ -12,6 +12,7 @@ import {
   getSongUrl,
   getSongComment,
   getPersonalizedPlaylists,
+  getTopLists,
   getDailySongs,
   getPlaylistInfo,
   getPlaylistSongs,
@@ -23,7 +24,12 @@ import { PLAYMODEL, PLAYTYPE, getNextSong } from '@/utils/music'
 import { ref } from 'vue'
 import { normalBack } from '../utils/MessageBack'
 import { debouncedLocalStorage } from '../utils/storage'
-import { playProgress, persistProgress, readPersistedProgress } from '../utils/playProgress'
+import {
+  playProgress,
+  lyricIndex,
+  persistProgress,
+  readPersistedProgress
+} from '../utils/playProgress'
 import { withTranslation } from '../utils/lyric'
 
 const audio = new Audio()
@@ -40,6 +46,22 @@ let switching = false
 let loadSeq = 0
 // 上一次注册的 loadedmetadata 续播回调，切歌前要摘掉，否则会把新歌的进度跳到旧位置
 let pendingSeek = null
+
+/*
+ * 播放队列的精简快照：只留切歌真正用到的字段。
+ * 完整对象里的 description、多套字段名（artists/album 与 ar/al 并存）都进不了持久化，
+ * 30 首大约 4KB，比完整队列小一半以上。
+ */
+const slimSong = song => ({
+  id: song?.id,
+  name: song?.name || '',
+  ar: (song?.ar || song?.artists || []).map(item => ({ name: item?.name || '' })),
+  al: {
+    name: song?.al?.name || song?.album?.name || '',
+    picUrl: song?.al?.picUrl || song?.album?.picUrl || ''
+  },
+  dt: song?.dt || song?.duration || 0
+})
 /*
  * 遇到无版权 / 无播放地址的歌曲时，连续自动跳过的次数与上限。
  * 整张列表都不可播（比如收藏夹里全是灰色歌）时，无限往下跳会一直发请求、一直闪，
@@ -72,6 +94,10 @@ export const musicStatus = defineStore('musicinfo', {
     playList: [], // 音乐列表
     favorite: [], // 收藏歌单
     recommendedPlayLists: [], // 推荐歌单（热门歌单页）
+    topLists: [], // 官方音乐榜单（榜单页）
+    playQueue: [], // 播放队列（当前播放列表的精简快照，切歌时会被替换）
+    queueSourceId: '', // 播放队列来源的歌单/榜单 id，切歌时会被替换
+    playQueueCache: [], // 播放队列的精简快照（持久化到 localStorage，刷新后恢复播放队列）
     dailySongs: [], // 每日推荐（发现音乐页）
     dailySongsDate: '', // 上次成功获取日推的本地日期（YYYY-MM-DD），用于判断跨天
     playlistSongs: [], // 选中歌单的歌曲
@@ -101,7 +127,7 @@ export const musicStatus = defineStore('musicinfo', {
       lyric: [], // 歌词
       artists: '', //艺人
       album: '', //专辑
-      currentLyricIndex: -1, // 当前歌词所在索引（-1 表示尚未进入第一句）
+      // currentLyricIndex: -1, // 当前歌词所在索引（-1 表示尚未进入第一句）
       currentTime: 0, // 当前播放时间（秒，进度条直接绑这个值）
       duration: 0, // 歌曲总时长
       comments: []
@@ -133,7 +159,7 @@ export const musicStatus = defineStore('musicinfo', {
       return this.currentMusic
     },
     getCurrentLyricIndex() {
-      return this.currentMusicInfo.currentLyricIndex
+      return lyricIndex.value
     },
     getPlayList() {
       return this.playList
@@ -214,6 +240,10 @@ export const musicStatus = defineStore('musicinfo', {
 
       // 恢复刷新前存下的进度（换过歌的话 id 对不上，会返回 0）
       playProgress.value = readPersistedProgress(this.currentMusicInfo?.id)
+      // 恢复播放队列：持久化的是精简快照，直接拿来用，播放列表刷新后立刻可见
+      if (this.playQueueCache?.length) {
+        this.playQueue = this.playQueueCache.slice()
+      }
 
       if (this.currentMusic) {
         const total = this.currentMusic.duration || this.currentMusic.dt
@@ -295,17 +325,42 @@ export const musicStatus = defineStore('musicinfo', {
       }
       // low - 1 为最后一句 time <= currentTime 的歌词；早于第一句时为 -1
       const index = low - 1
-      if (this.currentMusicInfo.currentLyricIndex !== index) {
-        this.currentMusicInfo.currentLyricIndex = index
+      // 当前句变了才更新，避免每帧都触发依赖它的歌词渲染
+      if (lyricIndex.value !== index) {
+        lyricIndex.value = index
       }
     },
     // 当前生效的歌曲列表
     getActivePlayList() {
+      /*
+       * 队列来源就是当前浏览的这个歌单时，用实时列表：
+       * 往下滚加载出来的新歌会自动接进队列，不会出现「歌单还有歌但没下一首」。
+       *
+       * 但要取两者中更长的那个：刷新后 playlistSongs 只有第一页（30 首），
+       * 而缓存里可能存着离开前加载到的 90 首，直接用第一页会把队列截短。
+       */
+      if (
+        this.playType === PLAYTYPE.HOT &&
+        this.queueSourceId &&
+        String(this.queueSourceId) === String(this.playlistInfo.id)
+      ) {
+        return this.playlistSongs.length >= this.playQueue.length
+          ? this.playlistSongs
+          : this.playQueue
+      }
+      // 有快照就用快照：浏览别的列表不该改变正在播放的队列
+      if (this.playQueue?.length) return this.playQueue
+      /*
+       * 还没点过歌（没有快照）时：
+       * 歌单场景返回空，而不是回退到当前浏览的歌单。
+       * 否则切换歌单/榜单就会让播放列表跟着换，看起来像"刷新了"。
+       * 刷新后快照丢了也走这里，列表为空，但不会误导成"当前歌单就是播放队列"。
+       */
+      if (this.playType === PLAYTYPE.HOT) return []
+      // 其余场景的列表本身就是固定队列（搜索结果/收藏/日推/歌手），回退可用
       switch (this.playType) {
         case PLAYTYPE.FAVORITE:
           return this.favorite
-        case PLAYTYPE.HOT:
-          return this.playlistSongs
         case PLAYTYPE.ARTIST:
           return this.artistSongs
         case PLAYTYPE.DAILY:
@@ -419,7 +474,7 @@ export const musicStatus = defineStore('musicinfo', {
       this.isTouch = false
       this.currentMusicInfo.url = ''
       playProgress.value = 0
-      this.currentMusicInfo.currentLyricIndex = -1
+      lyricIndex.value = -1
     },
     /*
      * 遇到不可播放的歌曲：先停播（避免上一首继续响），再顺着用户操作的方向自动跳过。
@@ -454,6 +509,8 @@ export const musicStatus = defineStore('musicinfo', {
     },
     // 统一构造当前播放信息，避免各处字段兜底逻辑不一致
     buildMusicInfo(music, { url = '', cover = '', lyric = [], comments = [] } = {}) {
+      // 换歌时歌词索引复位，否则新歌会先高亮到上一首唱到的那一句
+      lyricIndex.value = -1
       return {
         name: music.name,
         id: music.id,
@@ -470,6 +527,30 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 获取歌曲信息 准备播放（后台加载，不再弹全屏遮罩）
+    /*
+     * 从某个列表点歌。
+     *
+     * 先把列表拷一份当播放队列，再切歌。这样之后去浏览别的歌单、
+     * 重新搜索、清空当前列表，控制栏的播放列表和「上下首」都不受影响。
+     *
+     * @param {Array} list 点歌时所在列表的当前内容（有筛选就传筛选后的）
+     * @param {Object} row 被点的歌曲
+     * @param {string} type 列表来源，决定控制栏显示的名称
+     * @param {string|number} sourceId 来源标识（歌单 id / 歌手 id），用于判断能否用实时列表
+     */
+    playFromList(list, row, type, sourceId = '') {
+      this.playQueue = Array.isArray(list) ? list.slice() : []
+      this.playQueueCache = this.playQueue.map(slimSong)
+      this.queueSourceId = sourceId ? String(sourceId) : ''
+      this.playType = type
+      /*
+       * 点的正好是正在播的那首（两个歌单里有同一首歌是常见情况）：
+       * 只把播放队列切到新歌单，不重新加载音频。
+       * 否则会把听到一半的进度清零，用户只是想在另一个歌单里接着听。
+       */
+      if (String(this.currentMusicInfo?.id) === String(row?.id)) return
+      return this.setMusicInfo(row)
+    },
     async setMusicInfo(music, { autoplay = true, resumeAt = 0, skipForward = true } = {}) {
       if (!music?.id) return
 
@@ -638,7 +719,14 @@ export const musicStatus = defineStore('musicinfo', {
       try {
         this.keywords = String(keywords).trim()
         const res = await this.getSearchPlayListSafe()
-        this.playList = res.songs || []
+        const songs = res.songs || []
+        this.playList = songs
+        // 搜索结果带 songCount，直接和已加载条数比，别用「本页是否满额」判断
+        const total = Number(res.songCount) || 0
+        this.searchSettings.isSearchOverCounts =
+          !songs.length ||
+          (total > 0 && songs.length >= total) ||
+          songs.length < this.searchSettings.searchLimit
       } catch (error) {
         this.playList = []
         normalBack('warning', error.message)
@@ -773,6 +861,15 @@ export const musicStatus = defineStore('musicinfo', {
         normalBack('warning', error.message)
       }
     },
+    // 官方音乐榜单（榜单页）
+    async setTopLists() {
+      try {
+        this.topLists = await getTopLists()
+      } catch (error) {
+        this.topLists = []
+        normalBack('warning', error.message)
+      }
+    },
     // 每日推荐（发现音乐页）
     async setDailySongs() {
       try {
@@ -796,6 +893,15 @@ export const musicStatus = defineStore('musicinfo', {
     // 歌单详情：元信息 + 第一页歌曲
     async setPlaylistDetail(id) {
       if (!id) return normalBack('warning', '歌单不存在')
+      /*
+       * 切走之前，如果正在播放的队列就是这个歌单，先把当前的实时列表同步进快照。
+       * 不然快照还是点歌那一刻的 30 首，之后分页加载到 90 首，
+       * 一旦切到别的歌单，队列就退化回 30 首了。
+       */
+      if (this.queueSourceId && String(this.queueSourceId) === String(this.playlistInfo.id)) {
+        this.playQueue = this.playlistSongs.slice()
+        this.playQueueCache = this.playQueue.map(slimSong)
+      }
       const settings = this.searchSettings
       settings.playlistOffset = 0
       settings.isPlaylistOverCounts = false
@@ -846,16 +952,23 @@ export const musicStatus = defineStore('musicinfo', {
       const songs = songRes.songs || []
       this.playlistSongs = songs
       settings.playlistOffset = songs.length
-      // 不满一页说明没有下一页
-      if (songs.length < settings.playlistLimit) settings.isPlaylistOverCounts = true
+      /*
+       * 到底判断不能用「本页条数 < 每页条数」：
+       * 每个歌单默认就拉 30 首，正好 30 首的歌单第一页也是 30 首，
+       * 长度比较永远得不出「到底」，用户滚一下就会多发一次空请求。
+       * 歌单歌曲接口不返回总数，只能用元信息里的 trackCount 兜底。
+       */
+      const total = Number(this.playlistInfo.trackCount) || 0
+      settings.isPlaylistOverCounts =
+        !songs.length ||
+        (total > 0 && songs.length >= total) ||
+        songs.length < settings.playlistLimit
     },
     // 歌单歌曲触底加载
     async loadMorePlaylist() {
       const settings = this.searchSettings
       if (settings.isPlaylistOverCounts) return
       if (!this.playlistInfo.id) return
-      // 当前页没满，说明后面没有了
-      if (this.playlistSongs.length < settings.playlistLimit) return
       try {
         const res = await this.getPlaylistSongsSafe(this.playlistInfo.id, settings.playlistOffset)
         const songs = res.songs || []
@@ -865,7 +978,14 @@ export const musicStatus = defineStore('musicinfo', {
         }
         settings.playlistOffset += songs.length
         this.playlistSongs = [...this.playlistSongs, ...songs]
-        if (songs.length < settings.playlistLimit) settings.isPlaylistOverCounts = true
+        // 队列来源就是这个歌单：同步精简快照，刷新后队列条数才跟得上
+        if (this.queueSourceId && String(this.queueSourceId) === String(this.playlistInfo.id)) {
+          this.playQueueCache = this.playlistSongs.map(slimSong)
+        }
+        // 同上：累计条数追上 trackCount 才算真的到底
+        const total = Number(this.playlistInfo.trackCount) || 0
+        settings.isPlaylistOverCounts =
+          (total > 0 && this.playlistSongs.length >= total) || songs.length < settings.playlistLimit
       } catch (error) {
         normalBack('warning', error.message)
       }
@@ -939,7 +1059,9 @@ export const musicStatus = defineStore('musicinfo', {
       'isShowScrollLyrics',
       'isShowAnimationLyrics',
       'currentMusicInfo',
-      'searchSettings'
+      'searchSettings',
+      'queueSourceId',
+      'playQueueCache'
     ]
   }
 })

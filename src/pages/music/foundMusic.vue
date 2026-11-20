@@ -19,7 +19,7 @@ defineOptions({
 })
 
 const store = musicStatus()
-const { dailySongs, playType, currentMusicInfo } = storeToRefs(store)
+const { dailySongs, currentMusicInfo } = storeToRefs(store)
 const { markFavoriteClick, isJustFavorite } = useTableStyle()
 // 区分还在加载和加载完但没数据，接口失败时不会一直显示加载中
 const loading = ref(true)
@@ -33,15 +33,14 @@ const today = computed(() => {
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
   if (isJustFavorite()) return
-  playType.value = PLAYTYPE.DAILY
-  store.setMusicInfo(row)
+  // 传当前列表当播放队列：之后再浏览别的歌单/重新搜索，不会替换正在播放的队列
+  musicStatus().playFromList(dailySongs.value, row, PLAYTYPE.DAILY)
 }
 
 // 播放全部：从第一首开始，播放列表就是当日推荐
 const playAll = () => {
   if (!dailySongs.value.length) return
-  playType.value = PLAYTYPE.DAILY
-  store.setMusicInfo(dailySongs.value[0])
+  musicStatus().playFromList(dailySongs.value, dailySongs.value[0], PLAYTYPE.DAILY)
 }
 
 const toggleFavorite = row => {

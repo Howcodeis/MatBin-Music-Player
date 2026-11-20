@@ -12,7 +12,7 @@ defineOptions({
 })
 
 const store = musicStatus()
-const { getPlayList, playType, currentMusicInfo } = storeToRefs(store)
+const { getPlayList, currentMusicInfo } = storeToRefs(store)
 const { markFavoriteClick, isJustFavorite } = useTableStyle()
 
 const listRef = ref(null)
@@ -41,8 +41,8 @@ watch(
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
   if (isJustFavorite()) return
-  playType.value = PLAYTYPE.SEARCH
-  musicStatus().setMusicInfo(row)
+  // 传当前列表当播放队列：之后再浏览别的歌单/重新搜索，不会替换正在播放的队列
+  musicStatus().playFromList(getPlayList.value, row, PLAYTYPE.SEARCH)
 }
 
 // 触底加载：由 useLoadMore 保证同一时间只有一次请求
@@ -50,10 +50,8 @@ const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () =>
   const state = musicStatus()
   // 还没有搜索结果时不提示「到底」，那只是空列表而不是翻完了
   if (!state.playList?.length) return null
-  // 数据不满一页说明没有下一页
-  if (state.playList.length < state.searchSettings.searchLimit) {
-    return { added: 0, hasMore: false }
-  }
+  // 到底与否由 store 按接口 songCount 判断，不看本页条数
+  if (state.searchSettings.isSearchOverCounts) return null
   const before = state.playList.length
   await state.loadMore()
   return {

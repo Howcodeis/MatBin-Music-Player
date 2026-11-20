@@ -179,7 +179,7 @@ defineOptions({
   color: rgb(232 239 250 / 0.94);
 }
 
-.chapter p+p {
+.chapter p + p {
   margin-top: 0.55rem;
 }
 

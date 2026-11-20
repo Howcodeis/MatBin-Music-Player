@@ -17,7 +17,7 @@ const route = useRoute()
 const router = useRouter()
 const store = musicStatus()
 
-const { artistSongs, artistInfo, playType, currentMusicInfo } = storeToRefs(store)
+const { artistSongs, artistInfo, currentMusicInfo } = storeToRefs(store)
 const { markFavoriteClick, isJustFavorite } = useTableStyle()
 // 表格数据用筛选后的歌手热门，关键词来自顶部搜索框
 const { keyword: artistKeyword, filteredArtistSongs, resetArtistKeyword } = useArtistFilter()
@@ -43,10 +43,8 @@ const loading = ref(true)
 
 // 触底加载要在 watch 之前声明：下面的 watch 带 immediate，setup 阶段就会执行
 const { isLoadingMore, handleLoadMore, resetLoadMore } = useLoadMore(async () => {
-  // 数据不满一页说明没有下一页
-  if (artistSongs.value.length < store.searchSettings.artistLimit) {
-    return { added: 0, hasMore: false }
-  }
+  // 到底与否由 store 按接口 more 字段判断，不看本页条数
+  if (store.searchSettings.isArtistOverCounts) return null
   const before = artistSongs.value.length
   await store.loadMoreArtist()
   return {
@@ -73,8 +71,8 @@ watch(
 const playChoose = row => {
   // 刚点过收藏就不算选中歌曲
   if (isJustFavorite()) return
-  playType.value = PLAYTYPE.ARTIST
-  store.setMusicInfo(row)
+  // 传当前列表当播放队列：之后再浏览别的歌单/重新搜索，不会替换正在播放的队列
+  musicStatus().playFromList(filteredArtistSongs.value, row, PLAYTYPE.ARTIST, artistInfo.value.id)
 }
 
 // 收藏：爱心在序号右侧，点击只切换收藏，不触发播放

@@ -87,7 +87,6 @@ export function picTimeline(timeline, el, duration = 60000) {
 
 const ANIMATION_DURATION = 0.2 // 提取动画时长为常量
 
-
 /**
  * 动画隐藏面板函数
  * 使用GSAP库进行动画处理，将目标元素隐藏起来。

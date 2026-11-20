@@ -122,7 +122,7 @@ watch(musicCoverPath, url => {
       <Transition name="bg-fade">
         <img
           :key="displayCover"
-          class="absolute inset-0 w-full h-full object-cover object-center brightness-50 blur-md transform-gpu scale-105 will-change-[filter]"
+          class="absolute inset-0 w-full h-full object-cover object-center brightness-50 blur-md transform-gpu scale-110 will-change-[filter]"
           :src="displayCover"
           alt=""
         />
@@ -202,6 +202,6 @@ watch(musicCoverPath, url => {
 
 .bg-fade-enter-from,
 .bg-fade-leave-to {
-  opacity: 0.5;
+  opacity: 0;
 }
 </style>
