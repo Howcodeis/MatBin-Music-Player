@@ -1,11 +1,5 @@
 <script setup>
-/*
- * 音乐榜单：网易云官方榜（飙升 / 新歌 / 原创 / 热歌 / 荣耀热歌）
- *
- * 数据来自 /toplist/detail，一次请求拿到全部榜单和每个榜的前 3 首，
- * 点卡片进 playlistDetail 看完整歌曲列表。
- * 榜单本身就是一个歌单，所以详情页完全复用，不需要新建路由。
- */
+/* 官方榜单；榜单本质是歌单，点卡片复用 playlistDetail */
 import { defineOptions, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
@@ -125,7 +119,7 @@ onActivated(() => {
   color: rgba(255, 255, 255, 0.42);
 }
 
-/* ---------------- 榜单卡片 ---------------- */
+/* 榜单卡片 */
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -246,7 +240,7 @@ onActivated(() => {
   font-size: 0.66rem;
 }
 
-/* ---------------- 空状态 ---------------- */
+/* 空状态 */
 .charts-empty {
   display: flex;
   flex-direction: column;

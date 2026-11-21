@@ -1,11 +1,5 @@
 <script setup>
-/*
- * 发现音乐：每日推荐（/recommend/songs）
- *
- * 未登录也会返回一份日推，登录后是账号专属口味。
- * 这里直接以歌曲列表呈现：点行播放/收藏，播放类型记 DAILY，
- * 上下首就在当日推荐里轮转。
- */
+/* 每日推荐列表，播放类型记 DAILY */
 import { computed, defineOptions, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { musicStatus } from '@/store'
@@ -108,7 +102,7 @@ onActivated(() => {
 </template>
 
 <style scoped>
-/* ---------------- 头部 ---------------- */
+/* 头部 */
 .daily-head {
   display: flex;
   align-items: flex-end;

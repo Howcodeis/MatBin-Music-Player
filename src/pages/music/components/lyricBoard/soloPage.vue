@@ -91,13 +91,12 @@ const toggleLyricBoardStyle = () => {
 }
 const container = ref(null)
 
-/* ---------------- 底部评论气泡 ---------------- */
-const PAGE_SIZE = 6 // 每行 3 个 × 2 行
-const MAX_COMMENTS = 30 // 翻 5 次正好看完
+/* 底部评论气泡 */
+const PAGE_SIZE = 6
+const MAX_COMMENTS = 30
 const commentPage = ref(0)
 const commentGrid = ref(null)
 
-// store 里的 comments 一直没被用到，这里接上；只取前 30 条
 const allComments = computed(() => {
   const list = currentMusicInfo.value.comments
   return Array.isArray(list) ? list.slice(0, MAX_COMMENTS) : []
@@ -107,22 +106,21 @@ const visibleComments = computed(() =>
   allComments.value.slice(commentPage.value * PAGE_SIZE, commentPage.value * PAGE_SIZE + PAGE_SIZE)
 )
 
-// 点赞数放在评论右侧；超过 999 显示 999+
+// 超过 999 显示 999+
 const formatLikes = count => {
   const n = Number(count)
   if (!Number.isFinite(n) || n < 0) return '0'
   return n > 999 ? '999+' : String(Math.floor(n))
 }
 
-// 刷新 = 在已加载的 30 条里换下一批，不再发请求
+// 换一批评论，不发请求
 const refreshComments = () => {
   commentPage.value = (commentPage.value + 1) % totalPages.value
   nextTick(() => {
     const cells = commentGrid.value?.children
     if (!cells?.length) return
-    // 动画期间关掉毛玻璃：6 个胶囊同时移动，每帧重算 backdrop-filter 很吃性能
+    // 动画时关毛玻璃，免得每帧重算；只动外层，skew 在里层不会被覆盖
     for (const el of cells) el.classList.add('is-moving')
-    // 只动外层 .comment-cell，平行四边形用的 skew 在里层，避免 transform 被覆盖
     gsap.fromTo(
       cells,
       { autoAlpha: 0, y: 8 },
@@ -149,11 +147,7 @@ watch(
   }
 )
 
-/* ---------------- 评论区折叠 ----------------
- * showComments 控制评论区是否展开；默认展开（箭头向下）。
- * 上方 .lyric-block 用 flex:1 自动长高，歌词在块内居中，因此会平滑向下移并居中；
- * 箭头 rotate 180° 变向上。再点一次反向展开。
- */
+// 评论区折叠：.lyric-block 用 flex:1 吃满剩余高度，塌缩时歌词自动下移居中
 const showComments = ref(false)
 const toggleComments = () => {
   showComments.value = !showComments.value
@@ -344,7 +338,7 @@ onUnmounted(() => {
   }
 }
 
-/* ---------------- 歌手 / 歌词 / 评论 纵向布局 ---------------- */
+/* 歌手 / 歌词 / 评论 纵向布局 */
 .song-col {
   width: 100%;
   height: 100%;
@@ -353,10 +347,7 @@ onUnmounted(() => {
   justify-content: flex-start;
 }
 
-/*
- * 歌词块吃满剩余高度：评论区塌缩时它自动长高，
- * 内部歌手固定 25%、歌词 75% 并各自居中，所以歌词会平滑下移并居中。
- */
+/* 吃满剩余高度，评论区塌缩时自动长高把歌词顶下去 */
 .lyric-block {
   flex: 1 1 auto;
   min-height: 0;
@@ -405,7 +396,7 @@ onUnmounted(() => {
   transform: rotate(180deg);
 }
 
-/* ---------------- 底部评论气泡 ---------------- */
+/* 底部评论气泡 */
 .comment-zone {
   flex: 0 0 auto;
   display: flex;
@@ -417,7 +408,7 @@ onUnmounted(() => {
   min-height: 6rem;
   padding: 0.35rem 1rem 0.75rem;
   overflow: hidden;
-  /* 收起/展开都靠这条过渡驱动：height 塌缩 + 淡出，歌词块随 flex 重排同步下移 */
+  /* 塌缩 + 淡出，歌词块随 flex 重排下移 */
   transition:
     height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
     min-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
@@ -434,12 +425,7 @@ onUnmounted(() => {
   padding-bottom: 0;
 }
 
-/*
- * 每条评论本身是长条椭圆（胶囊），不是斜的四边形；
- * 第二行整体向右错位，6 条胶囊排出来的整体轮廓才像一个平行四边形。
- * 用 position:relative + left 做错位：不占布局宽度，也不会和 GSAP 写在
- * .comment-cell 上的 transform 打架。
- */
+/* 胶囊本身是椭圆，第二行右移拼出平行四边形轮廓；用 left 错位，不占宽度也不和 GSAP 的 transform 打架 */
 .comment-grid {
   flex: 1;
   min-width: 0;
@@ -483,7 +469,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* 翻页动画期间不重算毛玻璃，动画结束立刻恢复；纯透明和 blur 在这个尺寸下几乎看不出差别 */
+/* 翻页时关毛玻璃省性能，这个尺寸下看不出差别 */
 .comment-cell.is-moving .comment-bubble {
   backdrop-filter: none;
 }
@@ -495,7 +481,7 @@ onUnmounted(() => {
   gap: 0.4rem;
   width: 100%;
   height: 100%;
-  /* 胶囊两端是圆弧，左右多留一点内边距，文字才不会贴到弧边上 */
+  /* 两端是圆弧，多留点内边距文字才不贴弧边 */
   padding: 0.25rem 1.15rem;
 }
 

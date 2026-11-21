@@ -19,10 +19,7 @@ const { isShowAnimationLyrics, currentMusicInfo } = storeToRefs(musicStatus())
 
 const closeMusic = inject('closeMusic', null)
 
-/*
- * 回主页时先播完收起动画再放行导航。
- * 路由一变成 /，music 里的子路由就没匹配了，面板会先变空再动。
- */
+// 回主页先播完收起动画再放路由，否则面板会先变空再动
 onBeforeRouteLeave(async to => {
   if (to.name !== 'home' || !closeMusic) return true
   try {
@@ -42,7 +39,7 @@ provide('siderMenu', { isShowSiderMenu, showSiderMenu })
 
 const listPage = ref(null)
 const soloItem = ref(null)
-// 歌词面板调用函数
+
 const toggleLyricBoard = () => {
   if (!currentMusicInfo.value.cover && !currentMusicInfo.value.url) {
     normalBack('info', '当前没有播放的歌曲')
@@ -62,19 +59,13 @@ const toggleLyricBoard = () => {
     })
   }
 }
-/*
- * 全屏歌词层打开时切换路由（例如点歌手名跳转）要先按原路收起：
- * 打开时 PanelHideY 已把 listPage 的 opacity 设为 0，若只把标志位改 false，
- * 新页面会留在透明状态看不见。
- *
- * 只在音乐区内部切页时才收；回主页不重置，这样下次进来还是歌词页。
- */
+// 歌词页开着时若在音乐区内切页，先把它收起来——否则新页面会停在透明状态
 const route = useRoute()
 watch(
   () => route.fullPath,
   (to, from) => {
     if (!isShowAnimationLyrics.value) return
-    // 只有音乐区内部切页才收起；进出音乐区都保留歌词状态
+    // 进出音乐区不收，下次进来还是歌词页
     if (!to.startsWith('/music/') || !from.startsWith('/music/')) return
     PanelHideY(soloItem.value, 200, () => {
       isShowAnimationLyrics.value = false
@@ -83,15 +74,11 @@ watch(
   }
 )
 
-// 封面路径
 const musicCoverPath = computed(() => {
   return currentMusicInfo.value.cover || defaultCover
 })
 
-/*
- * 背景交叉淡变：
- * 先预加载新封面，等图片解码完再替换 displayCover，配合Transition做透明度过渡，
- */
+// 封面先预加载再替换，配合 Transition 做淡变，避免切歌时闪一下
 const displayCover = ref(toThumb(musicCoverPath.value, 100))
 let coverSeq = 0
 watch(musicCoverPath, url => {
@@ -110,15 +97,13 @@ watch(musicCoverPath, url => {
 </script>
 
 <template>
-  <!-- 整个音乐界面 包括空白 -->
   <div
     class="flex box-border will-change-scroll absolute w-full h-full justify-center overflow-y-auto max-md:items-end"
   >
-    <!-- 音乐展示界面 不包括空白-->
     <div
       class="box-border border bg-black/50 rounded-3xl relative m-auto duration-200 overflow-hidden w-[70%] h-[69%] flex max-md:my-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[90%] max-w-[1000px]"
     >
-      <!--背景封面：切歌时新旧两张图交叉淡变。scale-105 让 blur 的虚边落到裁剪线外，不会在边上露底色。-->
+      <!-- 背景封面：scale-110 让模糊虚边落到裁剪线外，边上不露底色 -->
       <Transition name="bg-fade">
         <img
           :key="displayCover"
@@ -127,20 +112,16 @@ watch(musicCoverPath, url => {
           alt=""
         />
       </Transition>
-      <!-- 列表和控件页面 -->
       <div class="w-full h-full">
-        <!--列表展示以及侧栏部分-->
         <div
           v-show="!isShowAnimationLyrics"
           ref="listPage"
           class="absolute w-full h-[calc(100%_-_104px)] flex"
         >
-          <!-- 音乐列表以及搜索 -->
           <div class="relative w-full h-full flex">
             <MusicLayout />
           </div>
         </div>
-        <!-- 主奏页面 -->
         <div
           v-if="isShowAnimationLyrics"
           ref="soloItem"
@@ -161,10 +142,7 @@ watch(musicCoverPath, url => {
           </div>
           <soloPage></soloPage>
         </div>
-        <div
-          class="absolute w-full h-[104px] border-gradient text-[#000000] bottom-0 z-20"
-        >
-          <!-- 控键 -->
+        <div class="absolute w-full h-[104px] border-gradient text-[#000000] bottom-0 z-20">
           <div class="relative bottom-0 flex w-full h-full select-none">
             <controls :toggle-lyric-board="toggleLyricBoard" />
           </div>
@@ -183,14 +161,7 @@ watch(musicCoverPath, url => {
   border-image: linear-gradient(to right, gray, white) 1;
 }
 
-.border-gradient-t-b {
-  border-image: linear-gradient(to bottom, gray, white) 1;
-}
-
-/*
- * 切歌背景交叉淡变。
- * 两张图同时存在时是叠加状态，旧图拖太久会让人以为背景没切干净，所以两边都压短。
- */
+/* 淡变压短，免得旧图拖着让人以为没切干净 */
 .bg-fade-enter-active {
   transition: opacity 1s ease;
 }

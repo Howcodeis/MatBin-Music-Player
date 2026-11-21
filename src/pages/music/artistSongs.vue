@@ -24,10 +24,8 @@ const { keyword: artistKeyword, filteredArtistSongs, resetArtistKeyword } = useA
 
 const artistName = computed(() => String(route.query.name || artistInfo.value.name || '歌手'))
 
-/*
- * 返回用户点进来时所在的页面。
- * 来源页由 useGoArtist 写进 query.from；没有来源时退回浏览器上一页。
- */
+// 用 back 弹出当前页，别用 push(from)——会多压一条来源页，返回时又弹回歌手页死循环。
+// 直接输 URL 没历史时，才用 from 兜底（replace 不压栈）
 const goBack = () => {
   const back = router.options.history.state.back
   if (typeof back === 'string' && back.startsWith('/')) {
@@ -35,7 +33,6 @@ const goBack = () => {
     return
   }
   const from = route.query.from
-  // 只接受站内路径，避免被 URL 里的 from 带到站外
   if (typeof from === 'string' && from.startsWith('/')) {
     router.replace(from)
     return
@@ -144,7 +141,7 @@ const hasMore = computed(() => !store.searchSettings.isArtistOverCounts)
 </template>
 
 <style scoped>
-/* ---------------- 歌手信息头 ---------------- */
+/* 歌手信息头 */
 .artist-head {
   display: flex;
   flex-direction: column;
@@ -219,7 +216,7 @@ const hasMore = computed(() => !store.searchSettings.isArtistOverCounts)
   font-size: 0.95rem;
 }
 
-/* ---------------- 空状态 ---------------- */
+/* 空状态 */
 .artist-empty {
   display: flex;
   flex-direction: column;
@@ -235,11 +232,6 @@ const hasMore = computed(() => !store.searchSettings.isArtistOverCounts)
   font-size: 2.4rem;
   color: rgba(255, 255, 255, 0.28);
 }
-
-/* ---------------- 表格文字 ---------------- */
-/* 爱心：未收藏是描边，收藏后变实心红 */
-/* 只在悬停设备上变色放大：触屏点完 :hover 会一直保持，
-   把「已取消收藏」的状态色盖住，看起来像没反应 */
 
 /* 窄屏：整体降一档字号，一屏能多看几行 */
 @media (max-width: 639.98px) {

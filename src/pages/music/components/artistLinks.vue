@@ -1,8 +1,5 @@
 <script setup>
-/*
- * 可点击的歌手名。
- * 点击用 @click.stop：列表行本身绑了 row-click 播放，不阻止冒泡会「点了歌手却开始放歌」。
- */
+/* 可点击的歌手名；@click.stop 防止冒泡到行的播放事件 */
 import { computed, defineOptions } from 'vue'
 import { useGoArtist } from '@/composables/useGoArtist'
 

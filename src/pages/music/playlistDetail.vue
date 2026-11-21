@@ -1,11 +1,5 @@
 <script setup>
-/*
- * 歌单详情：热门歌单卡片点进来的落地页
- *
- * 头部展示歌单元信息（封面/名称/作者/标签/歌曲数/播放量/简介），
- * 下面是歌曲表格，30 首一页、触底加载；点在播后 playType=HOT，
- * 上下首就在这个歌单里轮转。
- */
+/* 歌单详情：头部信息 + 歌曲列表（30 首一页，触底加载） */
 import { computed, defineOptions, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -90,15 +84,9 @@ const toggleFavorite = row => {
 
 const hasMore = computed(() => !store.searchSettings.isPlaylistOverCounts)
 
-/*
- * 返回上一页，而不是固定回热门歌单。
- * 详情页现在有三个入口：热门歌单卡片、音乐榜单卡片、外部链接，
- * 写死目标会把从榜单进来的用户莫名送回热门歌单。
- * 直接输 URL 进来时没有历史记录，兜底回热门歌单。
- */
+// 按历史返回，榜单/歌单进来各回各家；没有站内历史才兜底回热门歌单
 const goBack = () => {
   const back = router.options.history.state.back
-  // 只认应用内的历史（以 / 开头）；从外部链接或新标签直接进来时 back 可能是空或外站地址
   if (typeof back === 'string' && back.startsWith('/')) router.back()
   else router.push({ name: 'hotPlayList' })
 }
@@ -162,7 +150,7 @@ const goBack = () => {
 </template>
 
 <style scoped>
-/* ---------------- 歌单头部 ---------------- */
+/* 歌单头部 */
 .pl-head {
   position: relative;
   display: flex;
@@ -303,10 +291,6 @@ const goBack = () => {
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.32);
 }
-
-/* ---------------- 表格文字 ---------------- */
-/* 只在悬停设备上变色放大：触屏点完 :hover 会一直保持，
-   把「已取消收藏」的状态色盖住，看起来像没反应 */
 
 @media (max-width: 639.98px) {
   .pl-name {

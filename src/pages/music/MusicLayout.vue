@@ -39,10 +39,7 @@ const closeSiderMenu = () => {
 const drawerRef = ref(null)
 const maskRef = ref(null)
 
-/**
- * 同步抽屉状态
- * @param {boolean} animate 是否需要动画（首次挂载、切换断点时直接落位）
- */
+// 同步抽屉状态；animate=false 用于首次挂载和切断点时直接落位
 const syncDrawer = (animate = false) => {
   // 宽屏下永远是常驻布局，清掉动画残留的内联样式
   if (!isMobile.value) {

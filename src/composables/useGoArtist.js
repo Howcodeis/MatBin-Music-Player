@@ -18,12 +18,7 @@ export function useGoArtist() {
     if (!id) return normalBack('warning', '暂无法获取该歌手信息')
 
     const current = router.currentRoute.value
-    /*
-     * 记录用户是从哪个页面点进来的，歌手页的返回按钮据此原路返回。
-     * - 从普通页面（搜索/收藏/歌单）进入：来源就是当前地址；
-     * - 已经在歌手页里点合作歌手：沿用最初的来源页，不要记成上一个歌手页，
-     *   否则连点几个歌手后返回会一层层往回退。
-     */
+    // 记录来源页：已在歌手页点合作歌手时沿用最初的来源，别记成上一个歌手页
     const from =
       current.name === 'artistSongs'
         ? typeof current.query.from === 'string'
@@ -35,7 +30,7 @@ export function useGoArtist() {
       name: 'artistSongs',
       params: { id: String(id) },
       query: {
-        // 名字放 query 只是为了目标页首屏立刻有标题，真正的数据仍以接口返回为准
+        // 名字只为首屏标题，数据仍以接口为准
         ...(artist.name ? { name: artist.name } : {}),
         ...(from ? { from } : {})
       }

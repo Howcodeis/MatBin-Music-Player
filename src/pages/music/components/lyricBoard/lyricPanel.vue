@@ -56,11 +56,7 @@ const skipLyric = lyric => {
   musicStatus().skipByLyric(lyric?.time)
 }
 
-/*
- * 进入歌词页（含从主页返回）立即定位到当前句。
- * 等一小段时间让列表渲染完，offsetTop 才有值。
- * 用独立 timer，别碰 handleMove 里那个跟用户滚动相关的。
- */
+// 进歌词页定位到当前句；等列表渲染完 offsetTop 才有值，用独立 timer 不碰滚动的
 let relocateTimer
 const relocate = () => {
   clearTimeout(relocateTimer)

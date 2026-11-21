@@ -26,24 +26,19 @@ const smallMusicCover = computed(() => {
   return toThumb(currentMusicInfo.value.cover || defaultCover, 130)
 })
 
-/*
- * 进度条上方的(当前时间 / 总时长)气泡
- * - 拖动时一定显示（isTouch 由 store 在 setProgress / setProgressDone 里维护）
- * - 桌面端鼠标悬浮到进度条上时也显示；手机/平板（无 hover 能力）不启用
- * - 位置始终按播放进度百分比走，两端用 clamp 留出半个标签宽度，避免贴边被裁掉
- */
+// 时间气泡：拖动时必显，桌面悬浮也显；两端 clamp 留出半个气泡宽免得贴边被裁
 const isDragging = computed(() => Boolean(isTouch.value))
 const canHover = useCanHover()
 const isHovering = ref(false)
 
 const showTimeTip = computed(() => {
-  // 没有歌曲时气泡会显示 00:00 / 00:00，纯噪音，直接不显示
+  // 没歌时是 00:00/00:00，不显示
   const hasTrack = Number(currentMusicInfo.value.duration) > 0
   return hasTrack && (isDragging.value || (canHover.value && isHovering.value))
 })
 
 const handleProgressEnter = () => {
-  // 触屏设备不跟踪悬浮，避免点击后 hover 粘住
+  // 触屏不跟踪悬浮，免得点完 hover 粘住
   if (canHover.value) isHovering.value = true
 }
 const handleProgressLeave = () => {
@@ -71,23 +66,14 @@ const dragTipStyle = computed(() => {
   return { left: `clamp(3.1rem, ${clamped}%, calc(100% - 3.1rem))` }
 })
 
-/*
- * 拖动中只更新预览时间，松手才 seek。
- * 不用 v-model 直接写 store，是为了保证 isTouch 一定先于时间写入，
- * 否则高频 timeupdate 可能把拖动的位置覆盖掉。
- */
+// 拖动中只更新预览，松手才 seek；不走 v-model 免得 timeupdate 覆盖拖动位置
 const onProgressInput = time => {
   store.setProgress(time)
 }
 const onProgressChange = time => {
   store.setProgressDone(time)
 }
-/*
- * 拖动标记改用真实指针事件维护，而不是依赖 el-slider 的 @input：
- * el-slider 在切歌时因 :max / :model-value 变化会自行 emit @input，若用它来置 isTouch=true，
- * 没有配套的 @change 收尾就会把标记永久卡住，导致进度条冻结。
- * 用 capture 是因为 el-slider 可能在内部 stopPropagation，捕获阶段能确保先拿到事件。
- */
+// 用真实指针事件标记拖动，不用 el-slider 的 @input（切歌时它会自己触发，标记会卡住）
 const onProgressPointerDown = () => store.setDragging(true)
 const onProgressPointerUp = () => store.setDragging(false)
 
@@ -108,16 +94,12 @@ const onVolumeChange = value => {
   store.setVolume(Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0)
 }
 
-/* ---------------- 控制栏弹层（音量 / 播放列表，互斥） ---------------- */
+/* 控制栏弹层（音量 / 播放列表，互斥） */
 const controlBarRef = ref(null)
 const activePanel = ref('') // '' | 'volume' | 'playlist'
 const playlistRef = ref(null)
 
-/*
- * 打开播放列表时，把「正在播放」那一行滚到可视区，让用户一眼看到当前歌在队列的位置。
- * 不用 scrollIntoView：控制栏是 absolute 层，它会连带滚动外层面板，把整个界面顶跑。
- * li 和 ul 的 offsetParent 同为 .playlist-pop，两者 offsetTop 相减就是行相对列表顶部的距离。
- */
+// 打开列表时把当前歌滚到可视区。不用 scrollIntoView——它是 absolute 层，会把外层面板也顶跑
 const scrollCurrentIntoView = async () => {
   await nextTick()
   const listEl = playlistRef.value
@@ -161,7 +143,7 @@ onUnmounted(() => {
   window.removeEventListener('pointerup', onProgressPointerUp)
 })
 
-/* ---------------- 圆形音量旋钮（沿圆周旋转拖动） ---------------- */
+/* 圆形音量旋钮 */
 const knobRef = ref(null)
 const KNOB_RADIUS = 40
 const KNOB_CIRC = 2 * Math.PI * KNOB_RADIUS // 整圆周长 ≈ 251.3
@@ -176,11 +158,7 @@ const currentVolume = computed(() => {
 const volumePercent = computed(() => Math.round(currentVolume.value * 100))
 const knobDash = computed(() => `${currentVolume.value * KNOB_ARC} ${KNOB_CIRC}`)
 
-/**
- * 把鼠标相对圆心的角度换算成音量
- * 有效区间是 135° → 405°（顺时针 270°）；底部 45°~135° 是不画弧的死区，
- * 按离哪一端更近钳到 0 或 1，避免拖过底部时数值乱跳。
- */
+// 角度换音量：135°→405° 有效，底部死区按就近钳到 0 或 1
 const angleToVolume = deg => {
   const d = ((deg % 360) + 360) % 360
   let pos
@@ -224,7 +202,7 @@ const toggleMute = () => {
   else store.stepOpenVolume()
 }
 
-/* ---------------- 当前播放列表 ---------------- */
+/* 当前播放列表 */
 const activePlayList = computed(() => store.getActivePlayList() || [])
 const activeListName = computed(
   () =>
@@ -252,7 +230,7 @@ const playFromList = row => {
   closePanel()
 }
 
-// 当前播放歌曲是否已收藏（控制栏的小爱心）
+// 控制栏的小爱心
 const isCurrentFavorite = computed(() => {
   const id = currentMusic.value?.id || currentMusicInfo.value?.id
   return id ? musicStatus().isFavorite(id) : false
@@ -263,9 +241,6 @@ const toggleCurrentFavorite = () => {
   musicStatus().toggleFavorite(currentMusic.value)
 }
 
-/*
- * 计算播放模式图标
- */
 const playModeIcon = computed(() => {
   if (playMode.value === PLAYMODEL[0]) return 'icon-liebiaoxunhuan'
   if (playMode.value === PLAYMODEL[2]) return 'icon-danquxunhuan'
@@ -476,10 +451,7 @@ const cyclePlayMode = () => {
 </template>
 
 <style scoped>
-/*
- * 封面缩放只给支持悬停的设备。
- * 触屏上 :hover 会一直保持，点一下封面就永久放大，要再点别处才恢复。
- */
+/* 缩放只给能 hover 的设备，触屏点完 :hover 会一直粘着 */
 .cover-img {
   transition: transform 0.3s ease;
 }
@@ -497,17 +469,13 @@ const cyclePlayMode = () => {
     color 0.16s ease;
 }
 
-/* 触屏点完会一直保持，把收藏状态的颜色盖住。 */
 @media (hover: hover) and (pointer: fine) {
   .iconfont:hover {
     color: #0099ff;
   }
 }
 
-/*
- * 控制栏按钮：点击热区由按钮承担，图标只在按钮内部切换。
- * 直接给 <i> 加 :active，点击瞬间状态翻转会把元素隐藏，动画来不及播完。
- */
+/* 按钮承担点击热区，图标在里面切换；直接给 <i> 加 :active 会把动画打断 */
 .ctl-btn {
   flex: 0 0 auto;
   display: inline-flex;
@@ -535,7 +503,6 @@ const cyclePlayMode = () => {
 
 /* 放在 :hover 之后，按下时的高亮才能盖过悬停色 */
 .ctl-btn:active {
-  /* transform: scale(0.86); */
   background-color: rgba(255, 255, 255, 0.18);
 }
 
@@ -543,14 +510,12 @@ const cyclePlayMode = () => {
   transform: scale(0.86);
 }
 
-/* 按钮内的图标不再自带外边距和缩放，统一交给按钮控制 */
 .ctl-btn .iconfont {
   margin: 0;
   transform: none;
 }
 
-/* 图标切换：淡出缩小 → 淡入，避免硬切。
-   选择器带上 .iconfont 是为了压过它自己的 transition */
+/* 带 .iconfont 压过图标自身的 transition */
 .iconfont.icon-swap-enter-active,
 .iconfont.icon-swap-leave-active {
   transition:
@@ -589,7 +554,7 @@ const cyclePlayMode = () => {
   color: #ff6b81;
 }
 
-/* ---------------- 控制栏弹出面板 ---------------- */
+/* 控制栏弹出面板 */
 .ctl-pop-anchor {
   display: flex;
   position: relative;
@@ -619,7 +584,6 @@ const cyclePlayMode = () => {
 }
 
 .ctl-pop-anchor:active {
-  /* transform: scale(0.86); */
   background-color: rgba(255, 255, 255, 0.18);
 }
 
@@ -636,7 +600,7 @@ const cyclePlayMode = () => {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
-/* 只做透明度过渡：两个面板的定位 transform 不同，共用 transform 动画会打架 */
+/* 只过渡透明度，共用 transform 动画会和面板定位打架 */
 .pop-enter-active,
 .pop-leave-active {
   transition: opacity 0.18s ease;

@@ -1,10 +1,5 @@
 <script setup>
-/*
- * 热门歌单：网易云「推荐歌单」（/personalized）
- *
- * 这里只负责歌单卡片墙，点卡片进 playlistDetail 看歌曲。
- * 接口免登录，卡片数据带 playCount / trackCount / copywriter，足够做信息层级。
- */
+/* 推荐歌单卡片墙，点卡片进 playlistDetail */
 import { defineOptions, nextTick, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
@@ -27,10 +22,7 @@ const wrapRef = ref(null)
 // 卡片墙自己就是滚动容器（.hot-wrap 设了 overflow-y: auto）
 const getScroller = () => wrapRef.value
 
-/*
- * 进歌单详情前记住列表滚动位置，返回时恢复；
- * 去别的模块则清掉，避免下次从侧栏进来停在上次的一半位置。
- */
+// 进详情存滚动位置，去别处则清掉
 onBeforeRouteLeave(to => {
   if (to.name === 'playlistDetail') saveScroll(SCROLL_KEY, getScroller())
   else clearScroll(SCROLL_KEY)
@@ -299,7 +291,7 @@ onActivated(() => {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ---------------- 骨架屏 ---------------- */
+/* 骨架屏 */
 .hot-card.is-skeleton {
   pointer-events: none;
 }

@@ -27,11 +27,7 @@ const { keyword: favoriteKeyword } = useFavoriteFilter()
 const { keyword: artistKeyword, resetArtistKeyword } = useArtistFilter()
 // 歌单页的本地筛选关键词（和 playlistDetail.vue 共用同一个 ref）
 const { keyword: playListDetailKeyword } = usePlayListDetailsFilter()
-/*
- * 搜索框有两种模式，由当前路由决定：
- * - favorite 页：只做本地筛选，不发请求、不记搜索历史、不跳路由；
- * - 其他页：网络搜索（回车 / 点按钮 → 请求接口 → 结果展示在列表页）。
- */
+// 两种模式：favorite 等页只做本地筛选，其余走网络搜索
 const isFavoriteMode = computed(() => route.name === 'favorite')
 // 歌手页同样是页内筛选：只在已加载的歌手热门里过滤，不发网络请求
 const isArtistMode = computed(() => route.name === 'artistSongs')
@@ -126,18 +122,18 @@ watch(
   }
 )
 
-/* ---------------- 搜索历史面板 ---------------- */
+/* 搜索历史面板 */
 const isHistoryOpen = ref(false)
 const panelRef = ref(null)
 const listRef = ref(null)
-// 记录关闭补间，快速反复聚焦时能把它掐掉，避免 onComplete 把刚打开的面板又关掉
+// 关闭补间：反复聚焦时能掐掉，避免旧 onComplete 又关掉新面板
 let closeTween = null
 
 const openHistory = () => {
   // 收藏页 / 歌手页是本地筛选，不展示网络搜索历史
   if (isLocalFilterMode.value) return
   if (!searchHistory.value.length) return
-  // 关闭动画进行到一半又重新聚焦：先把补间掐掉并立刻复位，否则会停在半透明
+  // 关闭到一半又聚焦：掐掉补间并复位，否则停在半透明
   if (closeTween) {
     closeTween.kill()
     closeTween = null

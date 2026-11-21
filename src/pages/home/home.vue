@@ -65,26 +65,13 @@ defineOptions({
 </template>
 
 <style scoped>
-/*
- * 布局：引子 + 三个分章 + 转折 + 结尾。
- * 根元素保持 position:absolute —— App.vue 的路由过渡是两页交叉淡变，
- * 两个页面必须绝对定位重叠，否则会互相挤开。
- */
 .container {
   position: relative;
   inset: 0;
   width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /*
-   * 背景是彩色花卉 + 天空，App.vue 那层 50% 黑遮罩压不住长文的对比度。
-   * 这里再叠一层，只影响这一页，不动全局。
-   * 主页改纯色后不再需要，要恢复长文时再放开
-   * background: rgba(3, 8, 18, 0.44);
-   */
-  /* 内容不满一屏时居中，超出时从顶部开始滚 —— margin:auto 的经典用法，
-     比 justify-content:center 更稳（后者在内容溢出时会把顶部裁掉） */
-  display: flex;
+  display: flex; /* margin:auto 居中，内容溢出时也不会裁掉顶部 */
 }
 
 .inner {
@@ -99,12 +86,7 @@ defineOptions({
   text-align: center;
 }
 
-/*
- * 流动色：一块比屏幕大很多的渐变，整体缓慢平移 + 轻微缩放。
- * 关键是只动 transform —— 渐变本身是静态的，浏览器只做图层合成，
- * 不用每帧重新栅格化（改 background-position 就会，全屏重绘很贵）。
- * 颜色都压了透明度，整体偏暗，不抢标题的注意力。
- */
+/* 静态渐变只做 transform 平移，走合成层不重绘；改 background-position 就得全屏重画 */
 .aurora {
   position: fixed;
   inset: -20%;
@@ -140,7 +122,7 @@ defineOptions({
   }
 }
 
-/* ---------------- 标题区 ---------------- */
+/* 标题区 */
 .brand {
   font-size: 1.75rem;
   letter-spacing: 0.32em;
@@ -157,7 +139,7 @@ defineOptions({
   color: rgb(240 245 252 / 0.97);
 }
 
-/* ---------------- 分章 ---------------- */
+/* 分章 */
 .chapter {
   position: relative;
   margin-top: 2.2rem;
@@ -196,7 +178,7 @@ defineOptions({
   color: #ffffff;
 }
 
-/* ---------------- 结尾与按钮 ---------------- */
+/* 结尾与按钮 */
 .outro {
   margin-top: 0;
   display: flex;
@@ -236,7 +218,7 @@ defineOptions({
   }
 }
 
-/* ---------------- 窄屏 ---------------- */
+/* 窄屏 */
 @media (max-width: 639.98px) {
   .inner {
     padding: 2.5rem 1.15rem 3rem;

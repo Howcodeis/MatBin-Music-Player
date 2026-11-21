@@ -1,8 +1,5 @@
 <script setup>
-/*
- * 虚拟滚动的歌曲列表，替代 el-table。
- * el-table 会把所有行都渲染成 DOM，几百行时滚动明显卡；这里只渲染可视区域内的行。
- */
+/* 虚拟列表：只渲染可视区域，几百行也不卡 */
 import { computed, onActivated, onDeactivated, onMounted, watch } from 'vue'
 import { useMediaQuery, useVirtualList, useInfiniteScroll } from '@vueuse/core'
 import { timeFormat } from '@/utils/music'
@@ -49,14 +46,9 @@ const pad = n => (n < 10 ? '0' + n : String(n))
 const isFav = id => store.isFavorite(id)
 
 /*
- * 滚动位置记忆分两条路：
- * - 没传 scrollMemoryKey 的页面（搜索/喜欢/每日/歌手）沿用组件内的 savedTop。
- * - 传了 key 的页面（歌单详情）走模块级 useScrollMemory，按 key 存；
- *   KeepAlive max=6，实例可能被回收，组件内变量会丢，模块级 Map 不会。
- *
- * pendingTop 是关键：takeScroll 取一次就删，歌单数据又是异步加载的，
- * 太早把 scrollTop 写进一个还没撑开的容器会被浏览器钳到 0，位置就永久丢了。
- * 所以取出来先挂着，等列表真正渲染出高度再写。
+ * 滚动记忆：没传 key 的页面用组件内 savedTop；传了 key（歌单详情）用模块级 Map，
+ * 因为 KeepAlive 会回收实例，组件内变量会丢。
+ * pendingTop 先挂着不写：数据异步加载，太早设 scrollTop 会被没撑开的容器钳到 0。
  */
 let savedTop = 0
 let pendingTop = null
@@ -96,17 +88,11 @@ onDeactivated(() => {
   }
 })
 
-/*
- * 恢复入口有两个：onActivated（KeepAlive 命中时）和 onMounted（实例被重建时）。
- * 实测路由用 :key="fullPath" + Transition，切走再回来是「销毁重建」而非「激活缓存」，
- * 所以只写 onActivated 会漏掉重建场景，必须在 mounted 里也取一次。
- */
+// mounted 和 activated 都要恢复：路由用 :key + Transition，切走回来是重建不是缓存
 const restoreOnEnter = () => {
-  // 用此刻的 key 固化：此时 route 是本歌单，params.id 正确
-  activeKey = props.scrollMemoryKey
+  activeKey = props.scrollMemoryKey // 此刻 route 是本歌单，params.id 正确
   if (activeKey) {
-    // 不直接滚：数据是异步拉回来的，容器此刻可能还没高度。
-    // 取出来先挂着，等列表撑开再写；和 restoreScroll 共用判空，避免重复 take。
+    // 不直接滚，数据异步没高度；取出来挂着，和 restoreScroll 共用判空避免重复 take
     if (pendingTop == null) pendingTop = takeScroll(activeKey)
     applyPendingTop()
     return

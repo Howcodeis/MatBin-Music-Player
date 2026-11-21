@@ -16,10 +16,7 @@ const store = musicStatus()
 // 背景图已停用，主页走纯色；恢复背景图时把这个和模板里的 bg-fade 一起放开
 // const bgReady = ref(false)
 
-/*
- * 移动端软键盘会改变 innerHeight，面板按百分比重算后 controls 会被压扁。
- * 用输入框是否聚焦来判断，聚焦期间不跟随高度变化。
- */
+// 软键盘弹出会改 innerHeight 把 controls 压扁，聚焦输入框期间锁住高度
 const HEIGHT_VAR = '--app-height'
 let inputFocused = false
 
@@ -42,10 +39,7 @@ const isMusicPage = el => Boolean(el?.querySelector?.('#audioSchedule'))
 let musicEl = null
 let closingManually = false
 
-/*
- * 手动收起音乐页：先播完动画再跳路由。
- * 否则路由一变成 /，music 里的子路由就没匹配了，面板会先变空再动。
- */
+// 手动收起时先播完动画再跳路由，避免面板先变空
 provide(
   'closeMusic',
   () =>
@@ -150,9 +144,7 @@ onMounted(() => {
     if (document.visibilityState === 'hidden') savePlayProgress()
   })
 
-  // 首屏渲染完立刻预取音乐区代码。
-  // 之前用 requestIdleCallback 等空闲，结果被背景图解码占着主线程一直推迟，
-  // 用户点「进入」时 chunk 还没下，看着像卡住。
+  // 首屏立刻预取音乐区，不等空闲——点「进入」时 chunk 没下会像卡住
   import('./pages/music/music.vue')
   import('./pages/music/foundMusic.vue')
   import('./pages/music/playList.vue')
@@ -195,12 +187,10 @@ onMounted(() => {
 
 <style scoped>
 .body {
-  /* --app-height 由上面写入，锁定软键盘弹出前的可视高度 */
   height: var(--app-height, 100vh);
   background-color: #323737;
   position: relative;
-  /* 建立独立层叠上下文：否则 -1 的背景层会跑到深色底下面被遮住 */
-  isolation: isolate;
+  isolation: isolate; /* 独立层叠上下文，免得背景层被深色底盖住 */
 }
 
 /* 背景图图层已停用（主页改纯色），恢复背景图时一起放开

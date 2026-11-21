@@ -1,12 +1,5 @@
 <script setup>
-/*
- * 四个歌曲列表（搜索 / 热门歌单 / 我喜欢的 / 歌手热门）共用的行组件，负责渲染封面和文字区。
- * 封面字段兼容三种来源：
- *   - 搜索、歌单详情、歌手歌曲：al.picUrl
- *   - 收藏里可能来自搜索结果：album.picUrl
- *   - 当前播放信息：cover
- * 任一字段缺失或图片加载失败，都回退到默认封面
- */
+/* 各列表共用的歌曲行；封面兼容 al.picUrl / album.picUrl / cover，缺失或加载失败回退默认图 */
 import { computed, ref, watch } from 'vue'
 import defaultCover from '@/assets/image/109951173012411790.jpg'
 import { toThumb } from '@/utils/music'
