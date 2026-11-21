@@ -29,10 +29,15 @@ const artistName = computed(() => String(route.query.name || artistInfo.value.na
  * 来源页由 useGoArtist 写进 query.from；没有来源时退回浏览器上一页。
  */
 const goBack = () => {
+  const back = router.options.history.state.back
+  if (typeof back === 'string' && back.startsWith('/')) {
+    router.back()
+    return
+  }
   const from = route.query.from
   // 只接受站内路径，避免被 URL 里的 from 带到站外
   if (typeof from === 'string' && from.startsWith('/')) {
-    router.push(from)
+    router.replace(from)
     return
   }
   router.back()

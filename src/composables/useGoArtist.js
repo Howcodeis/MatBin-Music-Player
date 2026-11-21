@@ -31,7 +31,7 @@ export function useGoArtist() {
           : ''
         : current.fullPath
 
-    router.push({
+    const navigation = {
       name: 'artistSongs',
       params: { id: String(id) },
       query: {
@@ -39,7 +39,9 @@ export function useGoArtist() {
         ...(artist.name ? { name: artist.name } : {}),
         ...(from ? { from } : {})
       }
-    })
+    }
+    if (current.name === 'artistSongs') router.replace(navigation)
+    else router.push(navigation)
   }
 
   return { goArtist }
