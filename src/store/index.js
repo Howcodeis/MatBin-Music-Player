@@ -55,7 +55,8 @@ let pendingSeek = null
 const slimSong = song => ({
   id: song?.id,
   name: song?.name || '',
-  ar: (song?.ar || song?.artists || []).map(item => ({ name: item?.name || '' })),
+  // id 必须留：歌词页/控制栏点艺人要拿它跳歌手页，丢了就点不动
+  ar: (song?.ar || song?.artists || []).map(item => ({ id: item?.id, name: item?.name || '' })),
   al: {
     name: song?.al?.name || song?.album?.name || '',
     picUrl: song?.al?.picUrl || song?.album?.picUrl || ''
@@ -508,7 +509,10 @@ export const musicStatus = defineStore('musicinfo', {
       }, 800)
     },
     // 统一构造当前播放信息，避免各处字段兜底逻辑不一致
-    buildMusicInfo(music, { url = '', cover = '', lyric = [], comments = [] } = {}) {
+    buildMusicInfo(
+      music,
+      { url = '', cover = '', lyric = [], comments = [], artists = null } = {}
+    ) {
       // 换歌时歌词索引复位，否则新歌会先高亮到上一首唱到的那一句
       lyricIndex.value = -1
       return {
@@ -518,7 +522,8 @@ export const musicStatus = defineStore('musicinfo', {
         // 详情接口偶尔没有封面，退回列表里带的那份
         cover: cover || music.al?.picUrl || music.album?.picUrl || music.cover || '',
         lyric: Array.isArray(lyric) ? lyric : [],
-        artists: music.artists || music.ar || [],
+        // 优先用详情接口的艺人：队列精简快照、旧缓存里可能只剩 name，点艺人会跳不动
+        artists: artists?.length ? artists : music.artists || music.ar || [],
         album: music.album?.name || music.al?.name || '',
         currentLyricIndex: -1,
         currentTime: 0,
@@ -554,6 +559,9 @@ export const musicStatus = defineStore('musicinfo', {
     async setMusicInfo(music, { autoplay = true, resumeAt = 0, skipForward = true } = {}) {
       if (!music?.id) return
 
+      // 新歌立刻把进度归 0，别让上一首的位置按新歌时长换算出一段怪比例
+      if (resumeAt <= 0) playProgress.value = 0
+
       // 每次切歌领取一个新序号，旧请求回来时 isStale() 为真，直接丢弃结果
       const seq = ++loadSeq
       const isStale = () => seq !== loadSeq
@@ -586,7 +594,10 @@ export const musicStatus = defineStore('musicinfo', {
         // 停在上一首的 id 上会从上一首重新推算，导致原地打转。
         if (!songUrl?.url) {
           this.currentMusic = music
-          this.currentMusicInfo = this.buildMusicInfo(music, { cover: details?.[0]?.al?.picUrl })
+          this.currentMusicInfo = this.buildMusicInfo(music, {
+            cover: details?.[0]?.al?.picUrl,
+            artists: details?.[0]?.ar
+          })
           this.skipUnplayable(skipForward, `《${music.name}》暂无版权或播放地址`)
           return
         }
@@ -612,7 +623,9 @@ export const musicStatus = defineStore('musicinfo', {
           url: songUrl.url,
           cover: details?.[0]?.al?.picUrl,
           lyric: lyricList,
-          comments
+          comments,
+          // 队列快照可能只剩名字，用详情接口的完整艺人补上 id
+          artists: details?.[0]?.ar
         })
 
         const started = await this.loadAndPlay(songUrl.url, autoplay, resumeAt, seq, skipForward)
@@ -657,6 +670,14 @@ export const musicStatus = defineStore('musicinfo', {
         return false
       }
       this.currentMusicInfo.url = url
+      // 新歌从头播时清掉可能残留的默认起始位置（刷新后点歌词跳转留下的脏值）
+      if (resumeAt <= 0) {
+        try {
+          audio.currentTime = 0
+        } catch (e) {
+          // 无音源时个别浏览器会抛错，忽略
+        }
+      }
       audio.src = url
 
       if (resumeAt > 0) {
@@ -814,16 +835,10 @@ export const musicStatus = defineStore('musicinfo', {
     skipByLyric(time) {
       // 纯文本歌词的 time 为 null，点击不应该跳到 0
       if (time == null || !Number.isFinite(time)) return
-      audio.currentTime = time
+      if (audio.src) audio.currentTime = time
       playProgress.value = time
       this.syncLyricIndex(time)
     },
-    /*
-     * 拖动中只更新预览时间，不会更新audio.currentTime。
-     * pointerdown / 全局 pointerup），否则 el-slider 在切歌时因 :max / :model-value 变化自行触发
-     * 的 @input 会被误判成用户开始拖动，而这次 emit 没有配套的 @change，isTouch 就会永久卡在
-     * true，之后所有 timeupdate 都跳过进度写入，进度条冻结但歌照常播。
-     */
     setProgress(time) {
       const value = Number(time)
       if (Number.isFinite(value)) {
@@ -847,8 +862,7 @@ export const musicStatus = defineStore('musicinfo', {
         playProgress.value = audio.currentTime
         this.syncLyricIndex(audio.currentTime)
       } else {
-        audio.currentTime = 0
-        playProgress.value = 0
+        playProgress.value = target
       }
       this.isTouch = false
     },

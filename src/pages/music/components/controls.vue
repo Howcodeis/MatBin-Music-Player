@@ -14,8 +14,16 @@ defineOptions({
 })
 
 const store = musicStatus()
-const { getIsplay, volume, currentMusicInfo, playMode, isTouch, currentMusic, playType } =
-  storeToRefs(store)
+const {
+  getIsplay,
+  volume,
+  currentMusicInfo,
+  playMode,
+  isTouch,
+  currentMusic,
+  playType,
+  isShowAnimationLyrics
+} = storeToRefs(store)
 
 defineProps({
   toggleLyricBoard: Function
@@ -263,10 +271,12 @@ const cyclePlayMode = () => {
 
 <template>
   <!-- 歌曲图片信息 -->
-  <div class="flex justify-evenly items-center w-[40%] max-md:w-[20%]">
-    <!-- 图片 -->
+  <div
+    class="relative flex items-center h-full w-[40%] max-md:w-[20%] justify-evenly md:justify-start md:pl-8"
+  >
+    <!-- 封面：位置固定，不受文字显隐影响 -->
     <div
-      class="relative overflow-hidden left-1 rounded-2xl border-[1px] border-gray-500 w-[4rem] h-[4rem]"
+      class="relative shrink-0 overflow-hidden left-1 rounded-2xl border-[1px] border-gray-500 w-[4rem] h-[4rem]"
       @click="toggleLyricBoard"
     >
       <img
@@ -275,14 +285,24 @@ const cyclePlayMode = () => {
         alt="歌曲封面"
       />
     </div>
-    <!-- 歌曲名，歌手艺人名 在移动端上不显示 -->
-    <div class="relative w-[55%] left-1 text-white max-md:hidden">
-      <div class="text-ellipsis whitespace-nowrap overflow-x-hidden" :title="currentMusicInfo.name">
-        <span>{{ currentMusicInfo.name || '暂无歌曲' }}</span>
-      </div>
-      <div class="text-ellipsis whitespace-nowrap overflow-x-hidden" :title="artistsText">
-        <ArtistLinks :artists="currentMusicInfo.artists" />
-      </div>
+    <!--
+      歌名/艺人：绝对定位不占布局，这样淡出时封面不会被 flex 重新分布挤走。
+      移动端本来就隐藏，歌词页打开时整块淡出。
+    -->
+    <div class="absolute left-[8.25rem] right-6 top-1/2 -translate-y-1/2 text-white max-md:hidden">
+      <Transition name="bar-fade">
+        <div v-if="!isShowAnimationLyrics">
+          <div
+            class="text-ellipsis whitespace-nowrap overflow-x-hidden"
+            :title="currentMusicInfo.name"
+          >
+            <span>{{ currentMusicInfo.name || '暂无歌曲' }}</span>
+          </div>
+          <div class="text-ellipsis whitespace-nowrap overflow-x-hidden" :title="artistsText">
+            <ArtistLinks :artists="currentMusicInfo.artists" />
+          </div>
+        </div>
+      </Transition>
     </div>
   </div>
   <!-- 进度条 -->
@@ -312,8 +332,12 @@ const cyclePlayMode = () => {
       @change="onProgressChange"
     />
   </div>
-  <!-- 控制栏 -->
-  <div ref="controlBarRef" class="flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%]">
+  <!-- 控制栏：歌词页打开时整体平移到正中 -->
+  <div
+    ref="controlBarRef"
+    class="bar-controls flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%]"
+    :class="{ 'is-centered': isShowAnimationLyrics }"
+  >
     <!-- 播放顺序 / 音量 / 播放列表 -->
     <div class="flex justify-center">
       <div class="flex items-center relative">
@@ -843,6 +867,36 @@ const cyclePlayMode = () => {
   .drag-time {
     font-size: 0.7rem;
     padding: 0.1rem 0.45rem;
+  }
+}
+
+/* 歌词页打开时：文字淡出、按钮居中 */
+
+/* 歌名/艺人淡出 */
+.bar-fade-enter-active,
+.bar-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.bar-fade-enter-from,
+.bar-fade-leave-to {
+  opacity: 0;
+}
+
+/*
+ * 桌面端按钮组平移：左区占 40%、按钮占 60%，中心本来在 70%，
+ * 平移自身宽度的 1/3（= 整栏 20%）正好落到 50%。
+ * 只动 transform，走合成层，不触发重排。
+ * 移动端布局保持原样，这里整段用断点包住，窄屏不会有任何位移。
+ */
+@media (min-width: 768px) {
+  .bar-controls {
+    transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+    will-change: transform;
+  }
+
+  .bar-controls.is-centered {
+    transform: translateX(-33.3333%);
   }
 }
 </style>
