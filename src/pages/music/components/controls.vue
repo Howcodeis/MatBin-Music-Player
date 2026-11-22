@@ -233,8 +233,8 @@ const formatRowArtists = row => {
     : ''
 }
 const playFromList = row => {
-  // playType 不变，所以上下首仍在这个列表里轮转
-  store.setMusicInfo(row)
+  // playType 不变，所以上下首仍在这个列表里轮转；播起来后自动切到歌词页
+  store.setMusicInfo(row, { openLyrics: true })
   closePanel()
 }
 
@@ -272,7 +272,7 @@ const cyclePlayMode = () => {
 <template>
   <!-- 歌曲图片信息 -->
   <div
-    class="relative flex items-center h-full w-[40%] max-md:w-[20%] justify-evenly md:justify-start md:pl-8"
+    class="relative flex items-center h-full w-[40%] max-md:w-[20%] justify-evenly md:justify-start md:pl-8 md:pt-4"
   >
     <!-- 封面：位置固定，不受文字显隐影响 -->
     <div
@@ -308,7 +308,7 @@ const cyclePlayMode = () => {
   <!-- 进度条 -->
   <div
     id="audioSchedule"
-    class="absolute w-full overflow-visible flex items-center"
+    class="absolute top-0 left-0 z-30 w-full md:h-6 overflow-visible flex items-center"
     @pointerdown.capture="onProgressPointerDown"
     @mouseenter="handleProgressEnter"
     @mouseleave="handleProgressLeave"
@@ -335,7 +335,7 @@ const cyclePlayMode = () => {
   <!-- 控制栏：歌词页打开时整体平移到正中 -->
   <div
     ref="controlBarRef"
-    class="bar-controls flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%]"
+    class="bar-controls flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%] md:pt-6"
     :class="{ 'is-centered': isShowAnimationLyrics }"
   >
     <!-- 播放顺序 / 音量 / 播放列表 -->
@@ -816,7 +816,8 @@ const cyclePlayMode = () => {
 /* 拖动进度条时跟随显示的时间气泡 */
 .drag-time {
   position: absolute;
-  bottom: 0.75rem;
+  /* 贴在进度条上方，别压到进度条本身 */
+  bottom: 100%;
   transform: translateX(-50%);
   display: flex;
   align-items: baseline;

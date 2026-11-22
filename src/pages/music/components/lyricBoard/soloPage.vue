@@ -43,8 +43,10 @@ const renderLyric = async () => {
   // 原文和翻译都没变就不重播动画（索引来回跳时可能重复触发）
   if (nextWord === currentWord.value && nextTWord === currentTWord.value) return
 
-  prevWord.value = currentWord.value
-  prevTWord.value = currentTWord.value
+  // 首次渲染（刷新恢复进度）时 currentWord 还是空的，上一句得自己取，
+  // 否则只有当前句孤零零出来，少了交叉淡变
+  prevWord.value = currentWord.value || getLyricAt(getCurrentLyricIndex.value - 1)?.word || ''
+  prevTWord.value = currentTWord.value || getLyricAt(getCurrentLyricIndex.value - 1)?.tword || ''
   currentWord.value = nextWord
   currentTWord.value = nextTWord
   await nextTick()

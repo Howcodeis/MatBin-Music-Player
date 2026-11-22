@@ -15,7 +15,7 @@ defineOptions({
   name: 'MusicPage'
 })
 
-const { isShowAnimationLyrics, currentMusicInfo } = storeToRefs(musicStatus())
+const { isShowAnimationLyrics, currentMusicInfo, lyricsOpenRequest } = storeToRefs(musicStatus())
 
 const closeMusic = inject('closeMusic', null)
 
@@ -59,6 +59,15 @@ const toggleLyricBoard = () => {
     })
   }
 }
+// 点歌真正播起来后自动打开歌词页；已经在歌词页就不动
+watch(
+  () => lyricsOpenRequest.value,
+  () => {
+    if (isShowAnimationLyrics.value) return
+    toggleLyricBoard()
+  }
+)
+
 // 歌词页开着时若在音乐区内切页，先把它收起来——否则新页面会停在透明状态
 const route = useRoute()
 watch(

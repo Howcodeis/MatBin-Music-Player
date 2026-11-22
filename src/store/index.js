@@ -120,6 +120,9 @@ export const musicStatus = defineStore('musicinfo', {
     isShowAnimationLyrics: false, // 是否展示歌词特殊界面
     isTouch: false, // 是否拖动进度条
     isLoadingMusic: false, // 歌曲信息加载状态
+    // 自增计数：点歌且真正播起来后 +1，歌词页监听它打开。用计数而不是布尔，
+    // 连续点歌时每次都能触发，不会因为上一次没被消费而吃掉。
+    lyricsOpenRequest: 0,
     currentMusicInfo: {
       name: '', // 当前歌曲名
       id: '', // 当前歌曲id
@@ -241,6 +244,9 @@ export const musicStatus = defineStore('musicinfo', {
 
       // 恢复刷新前存下的进度（换过歌的话 id 对不上，会返回 0）
       playProgress.value = readPersistedProgress(this.currentMusicInfo?.id)
+      // 进度恢复了歌词索引也得跟着算一次：歌词索引只在 timeupdate 里更新，
+      // 刷新后还没音源不会触发，歌词页就会一直停在没有当前句的状态。
+      if (playProgress.value > 0) this.syncLyricIndex(playProgress.value)
       // 恢复播放队列：持久化的是精简快照，直接拿来用，播放列表刷新后立刻可见
       if (this.playQueueCache?.length) {
         this.playQueue = this.playQueueCache.slice()
@@ -288,8 +294,8 @@ export const musicStatus = defineStore('musicinfo', {
         // 更新播放状态
         this.isPlay = !audio.paused
 
-        // 拖动进度条期间不要用旧时间覆盖用户拖动的位置
-        if (!this.isTouch) {
+        // 拖动期间、切歌加载期间都不要用旧音频的时间覆盖进度条
+        if (!this.isTouch && !switching) {
           // 写到 store 外面：这个值每 250ms 变一次，放 state 里会触发全量持久化，
           // 播放时的动画卡顿主要就是它引起的
           playProgress.value = audio.currentTime
@@ -553,19 +559,35 @@ export const musicStatus = defineStore('musicinfo', {
        * 只把播放队列切到新歌单，不重新加载音频。
        * 否则会把听到一半的进度清零，用户只是想在另一个歌单里接着听。
        */
-      if (String(this.currentMusicInfo?.id) === String(row?.id)) return
-      return this.setMusicInfo(row)
+      if (String(this.currentMusicInfo?.id) === String(row?.id)) {
+        // 点的就是正在播的这首：不重载音频，但同样把歌词页拉出来
+        if (!this.isShowAnimationLyrics) this.lyricsOpenRequest++
+        return
+      }
+      return this.setMusicInfo(row, { openLyrics: true })
     },
-    async setMusicInfo(music, { autoplay = true, resumeAt = 0, skipForward = true } = {}) {
+    async setMusicInfo(
+      music,
+      { autoplay = true, resumeAt = 0, skipForward = true, openLyrics = false } = {}
+    ) {
       if (!music?.id) return
 
+      //切歌先把旧音源停掉，再归零进度。
+      switching = true
+      if (audio.src) {
+        try {
+          audio.pause()
+        } catch (e) {
+          // 无音源时个别浏览器会抛错，忽略
+        }
+      }
+      this.isPlay = false
       // 新歌立刻把进度归 0，别让上一首的位置按新歌时长换算出一段怪比例
       if (resumeAt <= 0) playProgress.value = 0
 
       // 每次切歌领取一个新序号，旧请求回来时 isStale() 为真，直接丢弃结果
       const seq = ++loadSeq
       const isStale = () => seq !== loadSeq
-      switching = true
       this.isLoadingMusic = true
 
       try {
@@ -628,7 +650,14 @@ export const musicStatus = defineStore('musicinfo', {
           artists: details?.[0]?.ar
         })
 
-        const started = await this.loadAndPlay(songUrl.url, autoplay, resumeAt, seq, skipForward)
+        const started = await this.loadAndPlay(
+          songUrl.url,
+          autoplay,
+          resumeAt,
+          seq,
+          skipForward,
+          openLyrics
+        )
         if (isStale()) return
         if (!started) {
           // 地址有了但音频本身加载不出来（已重试过一次）：同样跳过，别卡死在这一首
@@ -636,6 +665,8 @@ export const musicStatus = defineStore('musicinfo', {
           return
         }
         if (!autoplay) return
+        // 真正播起来之后才拉歌词页：加载失败就别跳过去让用户看着空页面
+        if (openLyrics && !this.isShowAnimationLyrics) this.lyricsOpenRequest++
         // 加载成功后在页面顶部轻提示一下（ElMessage），不阻塞任何操作
         normalBack('success', `正在播放：${music.name}`)
       } catch (error) {
@@ -653,7 +684,14 @@ export const musicStatus = defineStore('musicinfo', {
       }
     },
     // 加载音频并播放；resumeAt > 0 时从指定位置续播；返回是否真正加载成功
-    async loadAndPlay(url, autoplay = true, resumeAt = 0, seq = loadSeq, skipForward = true) {
+    async loadAndPlay(
+      url,
+      autoplay = true,
+      resumeAt = 0,
+      seq = loadSeq,
+      skipForward = true,
+      openLyrics = false
+    ) {
       const isStale = () => seq !== loadSeq
       if (isStale()) return false
 
@@ -722,7 +760,8 @@ export const musicStatus = defineStore('musicinfo', {
         return this.setMusicInfo(this.currentMusic, {
           autoplay,
           resumeAt: playProgress.value,
-          skipForward
+          skipForward,
+          openLyrics
         })
       }
     },
@@ -791,6 +830,10 @@ export const musicStatus = defineStore('musicinfo', {
         // 暂停时把位置记下来，下次接着听
         persistProgress(this.currentMusicInfo.id, playProgress.value)
         return
+      }
+      // 刷新后还没加载音源就点播放会卡流
+      if (this.isLoadingMusic) {
+        return normalBack('info', '正在加载歌曲，请稍候')
       }
       if (!this.currentMusicInfo.url) {
         // 有歌名说明是这首歌不可播，没歌名就是还没点过任何歌曲
@@ -862,7 +905,10 @@ export const musicStatus = defineStore('musicinfo', {
         playProgress.value = audio.currentTime
         this.syncLyricIndex(audio.currentTime)
       } else {
+        // 刷新后音源还没加载（duration 是 NaN）：只记位置，别写 audio.currentTime，
+        // 否则会被当成下一首的默认起始位置
         playProgress.value = target
+        this.syncLyricIndex(target)
       }
       this.isTouch = false
     },
