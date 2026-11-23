@@ -335,7 +335,7 @@ const cyclePlayMode = () => {
   <!-- 控制栏：歌词页打开时整体平移到正中 -->
   <div
     ref="controlBarRef"
-    class="bar-controls flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%] md:pt-6"
+    class="bar-controls flex justify-around flex-col w-[60%] min-w-[60%] max-md:w-[80%] md:mt-6 md:h-[calc(100%_-_1.5rem)]"
     :class="{ 'is-centered': isShowAnimationLyrics }"
   >
     <!-- 播放顺序 / 音量 / 播放列表 -->
@@ -886,6 +886,8 @@ const cyclePlayMode = () => {
 
 @media (min-width: 768px) {
   .bar-controls {
+    position: relative;
+    z-index: 35;
     transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
   }
 
