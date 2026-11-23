@@ -109,8 +109,9 @@ watch(musicCoverPath, url => {
   <div
     class="flex box-border will-change-scroll absolute w-full h-full justify-center overflow-y-auto max-md:items-end"
   >
+    <!-- 桌面 720×520 起步；移动端宽度本来就满，只限高度 -->
     <div
-      class="box-border border bg-black/50 rounded-3xl relative m-auto duration-200 overflow-hidden w-[70%] h-[69%] flex max-md:my-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[90%] max-w-[1000px]"
+      class="box-border border bg-black/50 rounded-3xl relative m-auto duration-200 overflow-hidden w-[70%] h-[69%] flex max-md:my-0 max-md:rounded-t-3xl max-md:rounded-b-none max-md:w-full max-md:h-[90%] max-w-[1000px] md:min-w-[720px] md:min-h-[520px] max-md:min-h-[480px]"
     >
       <!-- 背景封面：scale-110 让模糊虚边落到裁剪线外，边上不露底色 -->
       <Transition name="bg-fade">

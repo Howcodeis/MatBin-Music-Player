@@ -17,20 +17,23 @@ const { currentMusicInfo, getCurrentLyricIndex, getIsShowSPLyricsPanel } =
   storeToRefs(musicStatus())
 // 歌词面板
 const lyricBoard = ref(null)
-// 歌词偏移量
-const lyricMove = () => {
+
+// 行中心对齐容器中心；不能用 offsetTop，它相对的是外层容器不是 ul
+const lyricMove = (smooth = true) => {
   const board = lyricBoard.value
   if (!board) return
   const index = getCurrentLyricIndex.value
-  // 索引为 -1（还没进入第一句）时没有目标行
   const target = index >= 0 ? board.children[index] : null
   if (!target) return
-  // offsetTop 为 0 是第一行合法的情况，不能用 !offsetTop 判断
-  const offset = target.offsetTop - board.offsetHeight * 0.7
-  const top = Math.max(offset, 0)
-  board.scrollTo({ top, behavior: 'smooth' })
+  const boardRect = board.getBoundingClientRect()
+  const targetRect = target.getBoundingClientRect()
+  const center = targetRect.top + targetRect.height / 2 - boardRect.top + board.scrollTop
+  board.scrollTo({
+    top: Math.max(center - board.clientHeight / 2, 0),
+    behavior: smooth ? 'smooth' : 'auto'
+  })
 }
-// 监听鼠标滚动时间
+// 用户手动滚动后 3 秒内不抢滚动
 let timer
 let isLyricMove = true
 const handleMove = () => {
@@ -41,9 +44,14 @@ const handleMove = () => {
     lyricMove()
   }, 3000)
 }
-watch(getCurrentLyricIndex, () => {
-  if (isLyricMove) lyricMove()
-})
+// 等 active 类落到 DOM 上再算，否则字号还没生效
+watch(
+  getCurrentLyricIndex,
+  () => {
+    if (isLyricMove) lyricMove()
+  },
+  { flush: 'post' }
+)
 watch([getIsShowSPLyricsPanel, () => props.isShowScrollLyrics], () => {
   if (getIsShowSPLyricsPanel.value && props.isShowScrollLyrics) {
     timer = setTimeout(() => {
@@ -56,20 +64,31 @@ const skipLyric = lyric => {
   musicStatus().skipByLyric(lyric?.time)
 }
 
-// 进歌词页定位到当前句；等列表渲染完 offsetTop 才有值，用独立 timer 不碰滚动的
+// 进来先定位：等列表渲染完再算，用独立 timer 不碰滚动的
 let relocateTimer
 const relocate = () => {
   clearTimeout(relocateTimer)
-  relocateTimer = setTimeout(() => lyricMove(false), 300)
+  relocateTimer = setTimeout(() => lyricMove(), 300)
 }
 
-onMounted(relocate)
-// 页面被 KeepAlive 缓存，从主页回来不会重新挂载，靠这个钩子补一次
+// 尺寸一变就重算；必须瞬间定位，smooth 会被拖动反复打断，看着像滞后
+let ro = null
+onMounted(() => {
+  relocate()
+  const host = lyricBoard.value?.parentElement
+  if (host) {
+    ro = new ResizeObserver(() => lyricMove(false))
+    ro.observe(host)
+  }
+})
+// KeepAlive 回来不会重新挂载，补一次
 onActivated(relocate)
 
 onUnmounted(() => {
   clearTimeout(timer)
   clearTimeout(relocateTimer)
+  ro?.disconnect()
+  ro = null
 })
 </script>
 
@@ -79,14 +98,14 @@ onUnmounted(() => {
     <!-- 文字在模糊背景下滚动导致背景失真，出现块状问题 添加will-change-scroll 解决 -->
     <ul
       ref="lyricBoard"
-      class="overflow-y-scroll pt-[10rem] pb-[12rem] w-[80%] h-full will-change-scroll"
+      class="lyric-board overflow-y-scroll w-[80%] h-full will-change-scroll"
       @wheel="handleMove"
       @touchmove="handleMove"
     >
       <li
         v-for="(lyric, index) in currentMusicInfo.lyric"
         :key="index"
-        class="cursor-pointer leading-relaxed my-4 text-center text-slate-400 duration-300 will-change-transform"
+        class="cursor-pointer leading-relaxed my-4 text-center text-slate-400 transition-colors duration-300 will-change-transform"
         :class="[index == getCurrentLyricIndex ? 'active' : '']"
         @click.stop="skipLyric(lyric)"
       >
@@ -99,6 +118,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/*
+ * 首尾留白用伪元素，不用 padding：
+ * padding 会计入 border-box 高度，上下各半屏等于整个高度，
+ * 会把滚动容器撑高、不再跟随父级。
+ */
+.lyric-board::before,
+.lyric-board::after {
+  content: '';
+  display: block;
+  height: 50%;
+}
+
 .active {
   color: aliceblue;
   font-size: 1.1rem;
