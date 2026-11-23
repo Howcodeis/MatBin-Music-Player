@@ -884,16 +884,9 @@ const cyclePlayMode = () => {
   opacity: 0;
 }
 
-/*
- * 桌面端按钮组平移：左区占 40%、按钮占 60%，中心本来在 70%，
- * 平移自身宽度的 1/3（= 整栏 20%）正好落到 50%。
- * 只动 transform，走合成层，不触发重排。
- * 移动端布局保持原样，这里整段用断点包住，窄屏不会有任何位移。
- */
 @media (min-width: 768px) {
   .bar-controls {
     transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
-    will-change: transform;
   }
 
   .bar-controls.is-centered {
